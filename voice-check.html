@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>語音盤點</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font-family: -apple-system, "Segoe UI", "Noto Sans TC", sans-serif;
+    margin: 0; padding: 20px 16px 60px; line-height: 1.6;
+    max-width: 760px; margin-inline: auto;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { font-size: 13px; opacity: .7; margin: 0 0 20px; }
+  .env {
+    font-size: 12px; opacity: .8; word-break: break-all;
+    border: 1px solid currentColor; border-radius: 10px;
+    padding: 10px 12px; margin-bottom: 20px;
+  }
+  .pick {
+    border: 2px solid #2f7d4f; border-radius: 10px;
+    padding: 10px 12px; margin-bottom: 20px; font-size: 14px;
+  }
+  .row {
+    border: 1px solid rgba(128,128,128,.4); border-radius: 10px;
+    padding: 10px 12px; margin-bottom: 10px;
+  }
+  .row.best { border-color: #2f7d4f; border-width: 2px; }
+  .name { font-weight: 700; font-size: 15px; word-break: break-all; }
+  .meta { font-size: 12px; opacity: .75; margin-top: 2px; }
+  button {
+    font: inherit; padding: 6px 14px; margin-top: 8px; cursor: pointer;
+    border: 1px solid currentColor; border-radius: 8px; background: transparent;
+    color: inherit;
+  }
+  .empty { opacity: .7; }
+  textarea {
+    width: 100%; height: 180px; margin-top: 8px; font-family: ui-monospace, monospace;
+    font-size: 12px; box-sizing: border-box;
+  }
+</style>
+</head>
+<body>
+<h1>日文語音盤點</h1>
+<p class="sub">列出這台裝置能用的日文語音，依品質評分排序。按播放試聽，然後把最下方的文字方塊內容貼回對話。</p>
+
+<div class="env" id="env"></div>
+<div class="pick" id="pick"></div>
+<div id="list"><p class="empty">載入中，若持續空白代表這台裝置沒有日文語音。</p></div>
+
+<h2 style="font-size:16px;margin-top:28px;">複製這段回報</h2>
+<textarea id="report" readonly></textarea>
+
+<script>
+const SAMPLE = "いらっしゃいませ。本日はご予約をいただいておりますでしょうか。";
+
+const FEMALE = [
+  'nanami','aoi','mayu','shiori','ayumi','haruka','kyoko','o-ren','oren','sayaka','female',
+  '七海','葵','真夕','志織','歩','春香','京子','女'
+];
+const MALE = [
+  'keita','daichi','naoki','ichiro','otoya','hattori','masaru','male',
+  '圭太','大智','直紀','直樹','一郎','音也','服部','男'
+];
+
+function scoreJaVoice(v) {
+  const name = (v.name || '').toLowerCase();
+  let score = 0;
+  if (/natural|neural/.test(name)) score += 100;
+  if (/online/.test(name)) score += 60;
+  if (/google/.test(name)) score += 50;
+  if (v.localService === false) score += 30;
+  if (/hattori|o-ren|oren/.test(name)) score += 20;
+  if (/kyoko|otoya/.test(name)) score += 10;
+  if (/ayumi|haruka|ichiro/.test(name)) score -= 20;
+  return score;
+}
+
+function findByNames(voices, names) {
+  return voices.find(v => {
+    const n = (v.name || '').toLowerCase();
+    return names.some(k => n.includes(k));
+  }) || null;
+}
+
+function gender(v) {
+  const n = (v.name || '').toLowerCase();
+  if (FEMALE.some(k => n.includes(k))) return '女';
+  if (MALE.some(k => n.includes(k))) return '男';
+  return '未知';
+}
+
+function speak(v) {
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(SAMPLE);
+  u.lang = 'ja-JP';
+  u.voice = v;
+  u.pitch = 1.0;
+  u.rate = 1.0;
+  window.speechSynthesis.speak(u);
+}
+
+function render() {
+  const envEl = document.getElementById('env');
+  envEl.textContent = 'UA: ' + navigator.userAgent;
+
+  if (!('speechSynthesis' in window)) {
+    document.getElementById('list').innerHTML = '<p class="empty">這個瀏覽器不支援 speechSynthesis。</p>';
+    return;
+  }
+
+  const all = window.speechSynthesis.getVoices();
+  const ja = all
+    .filter(v => v.lang && v.lang.toLowerCase().startsWith('ja'))
+    .sort((a, b) => scoreJaVoice(b) - scoreJaVoice(a));
+
+  const listEl = document.getElementById('list');
+  const pickEl = document.getElementById('pick');
+
+  if (!ja.length) {
+    listEl.innerHTML = '<p class="empty">找不到日文語音。全部語音數：' + all.length + '</p>';
+    pickEl.textContent = '無法配置說話者音色。';
+    document.getElementById('report').value =
+      'UA: ' + navigator.userAgent + '\n日文語音: 0 / 全部語音: ' + all.length;
+    return;
+  }
+
+  const female = findByNames(ja, FEMALE);
+  const male = findByNames(ja, MALE);
+  const staffVoice = female || ja[0];
+  const customerVoice = (male && male !== staffVoice)
+    ? male
+    : (ja.find(v => v !== staffVoice) || staffVoice);
+
+  pickEl.innerHTML =
+    '目前的配置結果<br>店員：<b>' + staffVoice.name + '</b><br>客人：<b>' + customerVoice.name + '</b>' +
+    (staffVoice === customerVoice ? '<br><span style="opacity:.75">只有一個可用語音，兩位說話者共用，僅以語速微差區隔。</span>' : '');
+
+  listEl.innerHTML = '';
+  ja.forEach((v, i) => {
+    const div = document.createElement('div');
+    div.className = 'row' + (i === 0 ? ' best' : '');
+    div.innerHTML =
+      '<div class="name">' + v.name + '</div>' +
+      '<div class="meta">lang ' + v.lang +
+      ' / 評分 ' + scoreJaVoice(v) +
+      ' / ' + (v.localService ? '本機' : '雲端') +
+      ' / 判定性別 ' + gender(v) +
+      (v.default ? ' / 系統預設' : '') + '</div>';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = '播放試聽';
+    btn.addEventListener('click', () => speak(v));
+    div.appendChild(btn);
+    listEl.appendChild(div);
+  });
+
+  const lines = ja.map((v, i) =>
+    (i + 1) + '. ' + v.name + ' | ' + v.lang + ' | 評分 ' + scoreJaVoice(v) +
+    ' | ' + (v.localService ? 'local' : 'remote') + ' | ' + gender(v));
+  document.getElementById('report').value =
+    'UA: ' + navigator.userAgent + '\n' +
+    '日文語音 ' + ja.length + ' 個 / 全部 ' + all.length + ' 個\n' +
+    lines.join('\n') + '\n' +
+    '配置 -> 店員: ' + staffVoice.name + ' / 客人: ' + customerVoice.name;
+}
+
+render();
+if ('speechSynthesis' in window) {
+  window.speechSynthesis.onvoiceschanged = render;
+}
+</script>
+</body>
+</html>

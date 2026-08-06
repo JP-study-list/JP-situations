@@ -363,21 +363,22 @@ function makeSpeakBtn(text) {
 
 /* 單字用發音（中性音色，與對話的 staff/customer 區分開） */
 function speakWord(text, btn) {
-  if (!('speechSynthesis' in window)) {
-    alert('您的瀏覽器不支援語音播放功能');
-    return;
-  }
-  window.speechSynthesis.cancel();
+  stopCurrentPlayback();
+  document.querySelectorAll('.icon-btn.playing').forEach(b => b.classList.remove('playing'));
+  if (btn) btn.classList.add('playing');
+  const clear = () => { if (btn) btn.classList.remove('playing'); };
+  playPreRendered(text, 'word', clear, () => ttsSpeakWord(text, clear));
+}
+
+/* 找不到預生成音檔時的備援 */
+function ttsSpeakWord(text, clear) {
+  if (!('speechSynthesis' in window)) { clear(); return; }
   const utter = new SpeechSynthesisUtterance(text);
   utter.lang = 'ja-JP';
   const voices = getJaVoices();
   if (voices.length) utter.voice = voices[0];
   utter.pitch = 1.0;
-  utter.rate = 0.9;
-
-  document.querySelectorAll('.icon-btn.playing').forEach(b => b.classList.remove('playing'));
-  if (btn) btn.classList.add('playing');
-  const clear = () => { if (btn) btn.classList.remove('playing'); };
+  utter.rate = 0.95;
   utter.onend = clear;
   utter.onerror = clear;
   window.speechSynthesis.speak(utter);
@@ -948,69 +949,219 @@ function renderPhraseList() {
   });
 }
 
-/* ---------- 語音設定：店員 / 客人音色區分 ---------- */
+/* ---------- 預生成音檔播放層 ---------- */
+// 音檔由 tools/gen-audio.mjs 用 Azure Neural TTS 離線生成，
+// 路徑為 audio/<音色目錄>/<hash>.mp3。找不到就退回下方的 Web Speech。
+const AUDIO_BASE = './audio';
+// 音檔已由 tools/gen-audio.mjs 全量生成（5,042 個）。
+// 若日後新增情境頁但還沒跑生成腳本，該頁會自動退回 Web Speech，不需要動這個開關。
+const AUDIO_ENABLED = true;
+
+// 以下音色配置必須與 tools/gen-audio.mjs 完全一致，否則組出來的檔名對不上。
+const FEMALE_VOICES = ['nanami', 'mayu', 'shiori'];
+const MALE_VOICES = ['keita', 'daichi', 'naoki'];
+const WORD_VOICE = 'nanami';
+
+// 每個「情境」分配一組固定的男女配對：對話內部不換聲音，變化來自跨情境。
+// 角色也會互換，避免整站都是女店員配男客人。
+const scenarioVoiceCache = new Map();
+function scenarioVoices(pageKey, sceneKey, scenarioIndex) {
+  const cacheKey = `${pageKey}|${sceneKey}|${scenarioIndex}`;
+  if (scenarioVoiceCache.has(cacheKey)) return scenarioVoiceCache.get(cacheKey);
+  const h = audioHash(cacheKey);
+  const f = FEMALE_VOICES[parseInt(h.slice(0, 4), 16) % FEMALE_VOICES.length];
+  const m = MALE_VOICES[parseInt(h.slice(4, 8), 16) % MALE_VOICES.length];
+  const staffIsFemale = parseInt(h.slice(8, 12), 16) % 2 === 0;
+  const pair = staffIsFemale ? { staff: f, customer: m } : { staff: m, customer: f };
+  scenarioVoiceCache.set(cacheKey, pair);
+  return pair;
+}
+
+// 對話依目前所在的場景與情境決定音色；單字與易混詞固定用 WORD_VOICE
+function audioVoiceDir(speaker) {
+  if (speaker !== 'staff' && speaker !== 'customer') return WORD_VOICE;
+  return scenarioVoices(cfg.pageKey, currentPhraseScene, currentScenarioIndex)[speaker];
+}
+
+// 與 tools/gen-audio.mjs 的 audioHash 必須產生完全相同的結果。
+// 這裡刻意不用 crypto.subtle：它是非同步的，而 iOS Safari 要求 audio.play()
+// 必須在使用者手勢的同步呼叫堆疊內，await 之後會失去手勢授權而靜音。
+function audioHash(str) {
+  const bytes = new TextEncoder().encode(str);
+  let h1 = 0x811c9dc5;
+  let h2 = 0x01000193;
+  for (let i = 0; i < bytes.length; i++) {
+    h1 = Math.imul(h1 ^ bytes[i], 0x01000193) >>> 0;
+    h2 = Math.imul(h2 ^ bytes[i], 0x85ebca6b) >>> 0;
+  }
+  return h1.toString(16).padStart(8, '0') + h2.toString(16).padStart(8, '0');
+}
+
+function audioUrl(text, speaker) {
+  return `${AUDIO_BASE}/${audioVoiceDir(speaker)}/${audioHash(text)}.mp3`;
+}
+
+// iOS Safari 只信任「曾被使用者手勢解鎖過的那一個 audio 元素」，
+// 之後換 src 才能繼續自動播放。全站共用同一個元素，不要每次 new Audio()。
+let sharedAudio = null;
+// 已知缺檔的 URL，避免全部播放時對同一個 404 反覆發請求
+const missingAudio = new Set();
+// 播放世代編號：換曲或停止時遞增，讓上一次的回呼自動失效
+let audioToken = 0;
+
+function getSharedAudio() {
+  if (!sharedAudio) {
+    sharedAudio = new Audio();
+    sharedAudio.preload = 'auto';
+  }
+  return sharedAudio;
+}
+
+function stopCurrentPlayback() {
+  audioToken++;
+  if (sharedAudio) sharedAudio.pause();
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+}
+
+// 優先播放預生成音檔；缺檔或播放失敗時呼叫 onFallback 改用 Web Speech
+function playPreRendered(text, speaker, onEnd, onFallback) {
+  if (!AUDIO_ENABLED) { onFallback(); return; }
+  const url = audioUrl(text, speaker);
+  if (missingAudio.has(url)) { onFallback(); return; }
+
+  const audio = getSharedAudio();
+  const myToken = ++audioToken;
+  let settled = false;
+
+  const finish = (fn, markMissing) => {
+    // 已被新的播放取代時直接放棄，避免中斷造成的 AbortError 被誤判成缺檔
+    if (settled || myToken !== audioToken) return;
+    settled = true;
+    audio.onended = null;
+    audio.onerror = null;
+    if (markMissing) missingAudio.add(url);
+    fn();
+  };
+
+  audio.onended = () => finish(onEnd, false);
+  audio.onerror = () => finish(onFallback, true);
+
+  audio.src = url;
+  const p = audio.play();
+  if (p && typeof p.catch === 'function') {
+    p.catch(() => finish(onFallback, false));
+  }
+}
+
+/* ---------- 語音設定：店員 / 客人音色區分（音檔缺漏時的備援） ---------- */
 let cachedJaVoices = null;
+let cachedSpeakerVoices = null;
+
+// Web Speech 的 voice 物件不提供性別，只能靠實際語音名稱判斷。
+// 注意：Edge 在中文語系的 Windows 上會把語音名稱本地化成漢字
+// （Nanami 顯示為「七海」、Keita 顯示為「圭太」），所以羅馬字與漢字都要收。
+const JA_FEMALE_VOICE_NAMES = [
+  'nanami', 'aoi', 'mayu', 'shiori', 'ayumi', 'haruka', 'kyoko', 'o-ren', 'oren', 'sayaka', 'female',
+  '七海', '葵', '真夕', '志織', '歩', '春香', '京子', '女'
+];
+const JA_MALE_VOICE_NAMES = [
+  'keita', 'daichi', 'naoki', 'ichiro', 'otoya', 'hattori', 'masaru', 'male',
+  '圭太', '大智', '直紀', '直樹', '一郎', '音也', '服部', '男'
+];
+
+// 語音品質評分，分數越高越接近真人。
+// Edge 的 Online (Natural) 實為 Azure Neural、Chrome 的 Google 日本語為雲端合成，
+// 兩者都明顯優於系統內建舊引擎（Ayumi / Haruka / Ichiro 為 2015 年技術，排到最後）。
+function scoreJaVoice(v) {
+  const name = (v.name || '').toLowerCase();
+  let score = 0;
+  if (/natural|neural/.test(name)) score += 100;
+  if (/online/.test(name)) score += 60;
+  if (/google/.test(name)) score += 50;
+  if (v.localService === false) score += 30;
+  if (/hattori|o-ren|oren/.test(name)) score += 20;
+  if (/kyoko|otoya/.test(name)) score += 10;
+  if (/ayumi|haruka|ichiro/.test(name)) score -= 20;
+  return score;
+}
 
 function getJaVoices() {
   if (cachedJaVoices && cachedJaVoices.length) return cachedJaVoices;
   if (!('speechSynthesis' in window)) return [];
   const all = window.speechSynthesis.getVoices();
-  cachedJaVoices = all.filter(v => v.lang && v.lang.toLowerCase().startsWith('ja'));
+  cachedJaVoices = all
+    .filter(v => v.lang && v.lang.toLowerCase().startsWith('ja'))
+    .sort((a, b) => scoreJaVoice(b) - scoreJaVoice(a));
   return cachedJaVoices;
 }
 
 if ('speechSynthesis' in window) {
-  window.speechSynthesis.onvoiceschanged = () => { cachedJaVoices = null; };
+  window.speechSynthesis.onvoiceschanged = () => {
+    cachedJaVoices = null;
+    cachedSpeakerVoices = null;
+    getJaVoices();
+  };
+  // 部分瀏覽器首次呼叫 getVoices() 會回傳空陣列，先觸發一次暖機
+  getJaVoices();
 }
 
-// 依說話者套用不同音色／音調／語速，盡量挑選不同的日文語音；
-// 若瀏覽器只提供一種日文語音，則用 pitch 與 rate 製造區別
-function configureUtteranceForSpeaker(utter, speaker) {
-  const voices = getJaVoices();
-  if (voices.length >= 2) {
-    const femaleHint = voices.find(v => /female|女|f\b/i.test(v.name));
-    const maleHint = voices.find(v => /male|男|m\b/i.test(v.name) && v !== femaleHint);
-    if (speaker === 'staff') {
-      utter.voice = femaleHint || voices[0];
-    } else {
-      utter.voice = maleHint || voices[1] || voices[0];
-    }
-  } else if (voices.length === 1) {
-    utter.voice = voices[0];
-  }
+function findVoiceByNames(voices, names) {
+  return voices.find(v => {
+    const n = (v.name || '').toLowerCase();
+    return names.some(k => n.includes(k));
+  }) || null;
+}
 
-  if (speaker === 'staff') {
-    utter.pitch = 1.15;
-    utter.rate = 0.95;
-  } else {
-    utter.pitch = 0.85;
-    utter.rate = 0.97;
-  }
+// 一次決定兩位說話者的音色，確保兩者盡量落在不同的語音上
+function getSpeakerVoices() {
+  if (cachedSpeakerVoices) return cachedSpeakerVoices;
+  const voices = getJaVoices();
+  if (!voices.length) return { staff: null, customer: null };
+
+  const female = findVoiceByNames(voices, JA_FEMALE_VOICE_NAMES);
+  const male = findVoiceByNames(voices, JA_MALE_VOICE_NAMES);
+
+  const staffVoice = female || voices[0];
+  const customerVoice = (male && male !== staffVoice)
+    ? male
+    : (voices.find(v => v !== staffVoice) || staffVoice);
+
+  cachedSpeakerVoices = { staff: staffVoice, customer: customerVoice };
+  return cachedSpeakerVoices;
+}
+
+// 依說話者挑選不同的日文語音。
+// 刻意不調整 pitch：系統 TTS 的共振峰是固定的，強行位移音高等同變速播放，
+// 會產生金屬感，那正是「聽起來像機器人」的主因。
+// 湊不出兩種語音時寧可共用同一個，只用語速微差區隔。
+function configureUtteranceForSpeaker(utter, speaker) {
+  const picked = getSpeakerVoices()[speaker === 'staff' ? 'staff' : 'customer'];
+  if (picked) utter.voice = picked;
+  utter.pitch = 1.0;
+  utter.rate = speaker === 'staff' ? 1.0 : 0.97;
 }
 
 function speakJapanese(text, speaker, btn, row) {
-  if (!('speechSynthesis' in window)) {
-    alert('您的瀏覽器不支援語音播放功能');
-    return;
-  }
-  window.speechSynthesis.cancel();
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = 'ja-JP';
-  configureUtteranceForSpeaker(utter, speaker);
-
+  stopCurrentPlayback();
   document.querySelectorAll('.speak-btn.playing').forEach(b => b.classList.remove('playing'));
   if (btn) btn.classList.add('playing');
   if (row) row.classList.add('speaking');
 
-  utter.onend = () => {
+  const clear = () => {
     if (btn) btn.classList.remove('playing');
     if (row) row.classList.remove('speaking');
   };
-  utter.onerror = () => {
-    if (btn) btn.classList.remove('playing');
-    if (row) row.classList.remove('speaking');
-  };
+  playPreRendered(text, speaker, clear, () => ttsSpeakJapanese(text, speaker, clear));
+}
 
+/* 找不到預生成音檔時的備援 */
+function ttsSpeakJapanese(text, speaker, clear) {
+  if (!('speechSynthesis' in window)) { clear(); return; }
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'ja-JP';
+  configureUtteranceForSpeaker(utter, speaker);
+  utter.onend = clear;
+  utter.onerror = clear;
   window.speechSynthesis.speak(utter);
 }
 
@@ -1034,7 +1185,7 @@ function stopPlayAll() {
   if (!playAllActive) return;
   playAllAbort = true;
   playAllActive = false;
-  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  stopCurrentPlayback();
   document.querySelectorAll('.phrase-row.speaking').forEach(r => r.classList.remove('speaking'));
   document.querySelectorAll('.speak-btn.playing').forEach(b => b.classList.remove('playing'));
   setPlayAllButtonState(false);
@@ -1066,30 +1217,12 @@ function playAllScenario() {
       row.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    if (!('speechSynthesis' in window)) {
-      alert('您的瀏覽器不支援語音播放功能');
-      stopPlayAll();
-      return;
-    }
-
-    const utter = new SpeechSynthesisUtterance(item.jp);
-    utter.lang = 'ja-JP';
-    configureUtteranceForSpeaker(utter, item.speaker);
-
     document.querySelectorAll('.speak-btn.playing').forEach(b => b.classList.remove('playing'));
     document.querySelectorAll('.phrase-row.speaking').forEach(r => r.classList.remove('speaking'));
     if (speakBtn) speakBtn.classList.add('playing');
     if (row) row.classList.add('speaking');
 
-    utter.onend = () => {
-      if (speakBtn) speakBtn.classList.remove('playing');
-      if (row) row.classList.remove('speaking');
-      playAllQueueIndex++;
-      if (!playAllAbort) {
-        setTimeout(playNext, 350);
-      }
-    };
-    utter.onerror = () => {
+    const advance = () => {
       if (speakBtn) speakBtn.classList.remove('playing');
       if (row) row.classList.remove('speaking');
       playAllQueueIndex++;
@@ -1098,7 +1231,15 @@ function playAllScenario() {
       }
     };
 
-    window.speechSynthesis.speak(utter);
+    playPreRendered(item.jp, item.speaker, advance, () => {
+      if (!('speechSynthesis' in window)) { advance(); return; }
+      const utter = new SpeechSynthesisUtterance(item.jp);
+      utter.lang = 'ja-JP';
+      configureUtteranceForSpeaker(utter, item.speaker);
+      utter.onend = advance;
+      utter.onerror = advance;
+      window.speechSynthesis.speak(utter);
+    });
   }
 
   playNext();

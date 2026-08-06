@@ -5,6 +5,48 @@
 
 ---
 
+## 2026-08-06（五）
+- 類型：重構 / 新增
+- 影響檔案：`app.js`, `tools/gen-audio.mjs`（新增）, `audio/`（新增 5,042 個 mp3）,
+  `voice-check.html`（新增）, `.gitignore`（新增）, `.env.example`（新增）,
+  26 個情境頁（僅改 script 引用）, `project-index.md`
+- 摘要：語音層從瀏覽器 Web Speech 改為 **Azure Neural TTS 預生成音檔**，
+  並從單一「店員女聲／客人男聲」擴充為 **6 音色、每個情境輪替配對**。
+  - 新增 `tools/gen-audio.mjs`：以 `node:vm` 求值各情境頁的第一個 script 取出資料，
+    呼叫 Azure REST TTS 批次生成，輸出 `audio/<音色>/<hash>.mp3`。
+    支援 `--dry`（只統計）、`--sample`（試聽）、`--tier=s0`（付費層提速）、斷點續傳、孤兒回報。
+  - `app.js` 播放層改為 audio-first，Web Speech 降為 fallback（音檔 404 或載入失敗時接手）。
+  - 順帶修正 Web Speech 本身：**移除 pitch 位移**（原本 staff 1.15／customer 0.85，
+    是「聽起來像機器人」的主因）、音色改用品質評分排序、性別判斷改用真實語音名稱對照表
+    （原本的 `/female|女|f\b/` regex 命中率為零，實際是隨機取 `voices[0]`／`[1]`）。
+- 原因：使用者反映全站對話語音機械化，且整站只有兩個聲音。
+- 關鍵設計決定（皆有實測依據，勿隨意改動）：
+  - **檔名用內容 hash**（`audio/<音色>/<16位hex>.mp3`）：同一句話跨情境頁自動共用，
+    新增情境頁時已存在的句子不必重新生成。實測 5,741 個引用去重成 5,042 個檔。
+  - **hash 用同步的 FNV-1a 變體，不用 `crypto.subtle`**：後者是非同步的，而 iOS Safari 要求
+    `audio.play()` 必須在使用者手勢的同步呼叫堆疊內，`await` 之後會失去手勢授權而靜音。
+  - **全站共用同一個 `<audio>` 元素**：iOS 只信任被手勢解鎖過的那一個，換句子只換 `src`。
+  - **播放世代編號 `audioToken`**：切歌造成的 `AbortError` 不可被誤判成「檔案不存在」。
+  - **`AUDIO_ENABLED` 開關**：音檔尚未生成時設 false，否則每次播放要先吃一個 404 才 fallback。
+  - `scenarioVoices(pageKey, sceneKey, scenarioIndex)` 在 `app.js` 與 `gen-audio.mjs`
+    **各有一份完全相同的實作**，任一邊改動都必須同步，否則組出的檔名對不上。
+- 驗證：
+  - `node --check app.js` 通過
+  - hash 一致性：Node 與瀏覽器兩份實作比對 288 筆全等；全站 4,865 句零碰撞
+  - `scenarioVoices` 一致性：240 組情境兩邊完全相符，涵蓋全部 18 種配對組合
+  - 生成：5,000 成功、0 失敗；產出 5,042 檔，無零位元組或異常小檔
+  - **端對端驗證**（最關鍵）：用 `app.js` 自己的程式碼算出 26 頁全部 5,741 個播放 URL，
+    逐一確認檔案存在 —— 全數命中，沒有任何一句會退回 Web Speech
+  - 使用者實機確認：單句播放、全部播放、跨情境換人聲、單字固定音色，皆正常
+- 待辦/已知問題：
+  - `audio/` 佔 **116MB**（5,042 檔，平均 23.5KB，24kHz/48kbps 單聲道 mp3）。
+    GitHub Pages 站台上限 1GB，無虞，但 clone 會變慢。
+  - **新增情境頁後必須補跑 `node tools/gen-audio.mjs`**，否則該頁會退回 Web Speech。
+  - 音色池刻意排除 `aoi`（葵），使用者試聽後不喜歡；設定仍保留在 `VOICE_IDS` 以便改回。
+  - HD 音色 `ja-JP-Sakura` / `ja-JP-Haruto`（MAI-Voice-2-Flash）在 F0 免費層回 502，
+    需付費層才能用。
+  - `voice-check.html` 是診斷用工具頁，非情境頁，不在 `index.html` 掛入口，可隨時刪除。
+
 ## 2026-08-06（四）
 - 類型：新增
 - 影響檔案：school-interview.html（新增）, index.html, project-index.md

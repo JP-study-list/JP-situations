@@ -1,0 +1,13 @@
+# 機密設定，絕不進 git（見 CLAUDE.md §4 規則 D）
+.env
+.env.*
+!.env.example
+
+# 生成腳本的暫存與進度檔
+tools/.cache/
+audio/.progress.json
+
+node_modules/
+
+.DS_Store
+Thumbs.db

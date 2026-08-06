@@ -28,10 +28,12 @@ index.html  (hub：卡片入口 / 熱力圖 / 統計 / 收藏視窗)
                     │
                     ├─ app.css   全部情境頁樣式（只用 var()，不定義色值）
                     ├─ app.js    共用引擎：注入骨架 HTML + 全部互動邏輯
+                    │              └─→ audio/<音色>/<hash>.mp3   預生成語音
                     └─ common.js ES module：收藏資料層 / Firebase 同步 / 回首頁鈕
                                   （index.html 與情境頁都載入）
 
 載入順序不可調換：資料區塊 → app.js → common.js
+情境頁引用 app.js 時帶版本號（`./app.js?v=2`），避免 iOS PWA 吃到舊快取
 ```
 
 ---
@@ -41,9 +43,13 @@ index.html  (hub：卡片入口 / 熱力圖 / 統計 / 收藏視窗)
 | 檔案 | 用途 | 備註 |
 |------|------|------|
 | `index.html` | hub 首頁。側欄、收藏 Modal（含收藏測驗）、學習熱力圖、統計、最近瀏覽、最少複習、同步碼設定 | 自成一體，**不吃** `app.css` / `app.js`；改情境頁時常需同步改此檔的卡片與 `PAGES` |
-| `app.js` | 共用引擎。骨架注入、速查表（REF）、記憶卡／測驗（STUDY）、易混（CONFUSE）、常用句（PHRASE）、furigana、語音、主題切換 | **鐵則 1：不得擅自修改**，影響全部 26 頁 |
+| `app.js` | 共用引擎。骨架注入、速查表（REF）、記憶卡／測驗（STUDY）、易混（CONFUSE）、常用句（PHRASE）、furigana、語音、主題切換 | **鐵則 1：不得擅自修改**，影響全部 26 頁。語音層見下方「語音系統」 |
 | `app.css` | 情境頁全部樣式。顏色一律 `var(--xxx)` | **鐵則 1：不得擅自修改**；星號啟用色 `#C8A32C` 寫死於此 |
 | `common.js` | 收藏 CRUD、Firestore 拉取／推送與合併、同步碼、主題偏好、standalone 回首頁鈕。掛 `window.JPHub` | **鐵則 1：不得擅自修改**；Firebase config 在此（apiKey 非密鑰） |
+| `tools/gen-audio.mjs` | 語音生成腳本。抽取 26 頁資料 → 呼叫 Azure Neural TTS → 產出 `audio/` | 只在本機跑，不隨頁面載入。**新增情境頁後必須補跑** |
+| `voice-check.html` | 診斷工具頁：列出裝置上的日文語音、品質評分、性別判定，可試聽 | 非情境頁，不掛 `index.html` 入口，可隨時刪除 |
+| `.gitignore` | 保護 `.env`、`node_modules/` 等 | `.env.example` 刻意不忽略 |
+| `.env.example` | Azure 金鑰設定範本 | 實際的 `.env` 絕不進 git（見 `CLAUDE.md` §4 規則 D） |
 | `README.md` | 僅一行專案名 | 目前無實質內容 |
 | `CLAUDE.md` | 開發規範 + 專案技術背景（§8） | 會 commit 上公開 repo，禁寫 secret |
 | `progress.md` | 開發歷史（反向時間序） | 每次改檔即更新 |
@@ -100,6 +106,41 @@ index.html  (hub：卡片入口 / 熱力圖 / 統計 / 收藏視窗)
 
 > `index.html` 的卡片 `card-title` 與 `PAGES` 的 `title` 必須完全相同，
 > 否則收藏視窗的來源名稱會顯示錯誤。
+
+---
+
+## 語音系統
+
+發音走**預生成音檔**，Web Speech 只在音檔缺漏時當備援。
+
+```
+audio/
+  nanami/   七海（女）  單字與易混詞固定用此音色，另參與對話輪替
+  mayu/     真夕（女）
+  shiori/   志織（女）
+  keita/    圭太（男）
+  daichi/   大智（男）
+  naoki/    直紀（男）
+```
+
+- 共 5,042 個檔（24kHz / 48kbps 單聲道 mp3，約 116MB）
+- 檔名為日文原文的 hash，**同一句話跨情境頁共用同一個檔**
+- 每個「情境」由 `scenarioVoices(pageKey, sceneKey, scenarioIndex)` 決定一組固定男女配對，
+  對話內部不換聲音，變化來自跨情境；角色會互換，所以店員不一定是女聲。共 18 種組合
+
+**維護時的三個地雷**
+
+1. `audioHash` 與 `scenarioVoices` 在 `app.js` 與 `tools/gen-audio.mjs` 各有一份**完全相同**的
+   實作。任一邊改動都必須同步，否則播放端組出的檔名對不上生成端的產物。
+2. hash 刻意用同步的 FNV-1a 而非 `crypto.subtle`。後者是非同步的，而 iOS Safari 要求
+   `audio.play()` 必須在使用者手勢的同步呼叫堆疊內，`await` 之後會失去授權而靜音。
+   同理全站共用同一個 `<audio>` 元素，換句子只換 `src`。
+3. **新增或修改情境頁的日文內容後，必須補跑 `node tools/gen-audio.mjs`**
+   （需要 `.env` 的 Azure 金鑰），否則新句子會退回 Web Speech。
+   跑之前可先 `--dry` 看要生成幾個，腳本會一併回報已無人引用的孤兒音檔。
+
+Azure F0 免費層：每月 50 萬字元、每 60 秒 20 次請求（不可調整，全量重跑約 4.5 小時）。
+全站目前 94,360 字元，單月額度綽綽有餘。
 
 ---
 
