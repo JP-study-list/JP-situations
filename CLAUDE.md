@@ -157,9 +157,10 @@
 ### 8.0 一行摘要
 日文情境學習工具集，**純靜態 + 共用引擎架構**，無框架、無建置工具，
 託管於 GitHub Pages（`jp-study-list.github.io/JP-situations/`）。介面語言為台灣繁體中文。
+（`tools/gen-audio.mjs` 是離線的語音內容生成腳本，不是建置流程，網站仍是原樣送出。）
 
 ### 8.1 檔案結構
-所有檔案平放在 repo 根目錄，**沒有子資料夾**。
+所有網頁檔平放在 repo 根目錄，只有 `audio/` 與 `tools/` 兩個子資料夾。
 
 | 檔案 | 說明 |
 |------|------|
@@ -168,6 +169,9 @@
 | `app.css` | 全部情境頁樣式。顏色一律 `var(--xxx)`，**不定義任何色值** |
 | `app.js` | 共用引擎：注入頁面骨架 HTML ＋ 全部互動邏輯，讀取各頁的 `PAGE_CONFIG` |
 | `<情境>.html` | 各情境頁。**只含三樣東西**：配色區塊、四個資料區塊、`PAGE_CONFIG` |
+| `audio/<音色>/` | 預生成語音 mp3，檔名為日文原文的 hash。不手動編輯 |
+| `tools/gen-audio.mjs` | 語音生成腳本，只在本機跑，不隨頁面載入。詳見 §8.11 |
+| `voice-check.html` | 語音診斷頁，非情境頁，不掛 `index.html` 入口 |
 
 `hotel.html` 是情境頁的標準範本，任何新增或修改都以它為結構基準。
 詳細檔案清單與職責見 `project-index.md`。
@@ -180,10 +184,11 @@
    head：meta、title、Google Fonts、<link rel="stylesheet" href="./app.css">、<style> 配色 </style>
    body：
      <script>  四個資料區塊 ＋ PAGE_CONFIG  </script>
-     <script src="./app.js"></script>
+     <script src="./app.js?v=2"></script>
      <script type="module" src="./common.js"></script>
    ```
    載入順序不可調換：資料 → `app.js` → `common.js`。
+   `app.js` 的版本號用於強制刷新 iOS PWA 快取，改動 `app.js` 時 26 頁要一起進版。
 3. **全檔禁止 emoji**（包含資料內容、註解、UI 文字）。
 4. 檔名用英文或 romaji 小寫，可含連字號（如 `car-rental.html`）。
 5. 不使用任何前端框架或建置工具。外部資源只有 Google Fonts 與 Firebase CDN。
@@ -265,7 +270,14 @@ const PAGE_CONFIG = {
    - `const PAGES` 陣列加入 `{ file: "檔名.html", title: "中文名稱" }`
      供隨機學習、最少複習、收藏來源標籤使用。
      **`title` 必須與 `card-title` 完全相同**，否則收藏視窗的來源名稱會顯示錯誤
-3. 執行 §8.8 驗證清單，並更新 `project-index.md` 與 `progress.md`
+3. **生成語音音檔**（漏掉這步不會報錯，新頁面只會安靜地退回 Web Speech）：
+   ```
+   node tools/gen-audio.mjs --dry    先看要生成幾個
+   node tools/gen-audio.mjs          實際生成，已存在的自動跳過
+   ```
+   前置條件是根目錄的 `.env` 有 Azure 金鑰（見 §8.11）。
+   單一情境頁約需生成 230 個檔，F0 免費層限流下約 12 分鐘。
+4. 執行 §8.8 驗證清單，並更新 `project-index.md` 與 `progress.md`
 
 ### 8.7 遷移舊版情境頁
 舊版是自包含單檔（樣式與邏輯都內嵌）。遷移時只做三件事，其餘一律刪除：
@@ -287,6 +299,9 @@ const PAGE_CONFIG = {
 - [ ] 無殘留舊變數名（如 `--navy`）、無 emoji
 - [ ] KANJI_READINGS：以 Python 模擬最長匹配，確認對話中漢字詞零缺漏
 - [ ] 新增情境時，`index.html` 的卡片與 `PAGES` 兩處都已更新且 title 一致
+- [ ] 語音音檔已生成：`node tools/gen-audio.mjs --dry` 顯示「尚未生成 0 個」
+- [ ] 端對端命中：用 `app.js` 自身的 `audioHash` 與 `scenarioVoices` 算出該頁每一句的
+      音檔 URL，逐一確認檔案存在，命中率須為 100%（否則該頁會退回 Web Speech）
 
 ### 8.9 Firebase
 - Project ID：`jpsituations`
@@ -301,12 +316,31 @@ const PAGE_CONFIG = {
 ### 8.10 部署
 - GitHub Pages：`main` branch 根目錄；remote `github.com/JP-study-list/JP-situations`
 - 網域：`https://jp-study-list.github.io/JP-situations/`
-- 無 Apps Script、無 `.env`（目前專案不需要任何機密設定）
+- 無 Apps Script。`.env` 存 Azure 語音金鑰（見 §8.11），已列入 `.gitignore`，絕不進 git
 - 本地 `backup` branch 為備份分支，勿直接推送
 
-### 8.11 專屬 API / 資料來源
-- 無外部 API。發音走瀏覽器內建 Web Speech API（`speechSynthesis`），
-  依 speaker 切換不同日文音色；iOS 與桌機可用音色不同屬正常。
+### 8.11 語音系統
+發音走**預生成音檔**，Web Speech 只在音檔缺漏時當備援。
+
+- 音檔由 `tools/gen-audio.mjs` 呼叫 **Azure Neural TTS** 離線批次生成，
+  輸出 `audio/<音色>/<日文原文的 hash>.mp3`（24kHz / 48kbps 單聲道）
+- 金鑰存於根目錄 `.env` 的 `AZURE_SPEECH_KEY` 與 `AZURE_SPEECH_REGION`（**不進 git**，
+  範本見 `.env.example`）。Azure 定價層為 **F0 免費層**：每月 50 萬字元、
+  每 60 秒 20 次請求（不可調整）。全站目前約 9.4 萬字元
+- 音色池 6 個：女聲 `nanami` / `mayu` / `shiori`，男聲 `keita` / `daichi` / `naoki`。
+  刻意排除 `aoi`（使用者試聽後不喜歡）；HD 音色 `Sakura` / `Haruto` 在 F0 會回 502
+- 每個「情境」由 `scenarioVoices(pageKey, sceneKey, scenarioIndex)` 決定一組固定男女配對，
+  對話內部不換聲音，角色會互換（店員不一定是女聲），共 18 種組合。
+  單字與易混詞固定用 `nanami`
+
+**三個維護地雷**
+
+1. `audioHash` 與 `scenarioVoices` 在 `app.js` 與 `tools/gen-audio.mjs`
+   **各有一份完全相同的實作**。任一邊改動都必須同步，否則播放端組出的檔名對不上產物
+2. hash 刻意用同步的 FNV-1a 而非 `crypto.subtle`。後者是非同步的，而 iOS Safari 要求
+   `audio.play()` 必須在使用者手勢的同步呼叫堆疊內，`await` 之後會失去授權而靜音。
+   同理全站共用同一個 `<audio>` 元素，換句子只換 `src`
+3. 修改任何情境頁的 `jp` 內容後都要補跑生成腳本，舊音檔會變成孤兒（腳本會回報，不自動刪）
 
 ### 8.12 自動化
 - GitHub Actions：無
@@ -319,8 +353,11 @@ const PAGE_CONFIG = {
   `scope` 少了尾斜線或改成相對路徑，PWA 會脫離 standalone 模式，
   連帶讓 `common.js` 的回首頁按鈕不出現。
   （此檔曾長期缺失導致線上 404，2026-08-06 補回。）
-- **iOS PWA 快取**：更新 `app.js` / `app.css` 後若手機沒吃到新版，
-  在情境頁的引用加版本號強制刷新（`./app.js?v=2`）
+- **iOS PWA 快取**：情境頁目前引用 `./app.js?v=2`。改動 `app.js` 後手機若沒吃到新版，
+  把 26 頁的版本號一起遞增（`?v=3`）強制刷新。`app.css` 尚未帶版本號，
+  日後若改動它而手機沒更新，比照辦理
+- **repo 體積**：`audio/` 佔約 116MB（5,042 個檔）。clone 會偏慢屬正常，
+  且已進 git 歷史刪不掉。新增情境頁時每頁再增加約 5MB
 - **PWA 圖示絕對路徑**：`index.html` 與 `manifest.json` 使用
   `/JP-situations/...` 絕對路徑，這是 GitHub Pages 子路徑託管下 iOS 抓圖示的必要寫法，
   **不要改成相對路徑**
