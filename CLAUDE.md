@@ -188,7 +188,7 @@
      <script type="module" src="./common.js"></script>
    ```
    載入順序不可調換：資料 → `app.js` → `common.js`。
-   `app.js` 的版本號用於強制刷新 iOS PWA 快取，改動 `app.js` 時 26 頁要一起進版。
+   `app.js` 的版本號用於強制刷新 iOS PWA 快取，改動 `app.js` 時 27 頁要一起進版。
 3. **全檔禁止 emoji**（包含資料內容、註解、UI 文字）。
 4. 檔名用英文或 romaji 小寫，可含連字號（如 `car-rental.html`）。
 5. 不使用任何前端框架或建置工具。外部資源只有 Google Fonts 與 Firebase CDN。
@@ -326,7 +326,7 @@ const PAGE_CONFIG = {
   輸出 `audio/<音色>/<日文原文的 hash>.mp3`（24kHz / 48kbps 單聲道）
 - 金鑰存於根目錄 `.env` 的 `AZURE_SPEECH_KEY` 與 `AZURE_SPEECH_REGION`（**不進 git**，
   範本見 `.env.example`）。Azure 定價層為 **F0 免費層**：每月 50 萬字元、
-  每 60 秒 20 次請求（不可調整）。全站目前約 9.4 萬字元
+  每 60 秒 20 次請求（不可調整）。全站目前約 9.8 萬字元
 - 音色池 6 個：女聲 `nanami` / `mayu` / `shiori`，男聲 `keita` / `daichi` / `naoki`。
   刻意排除 `aoi`（使用者試聽後不喜歡）；HD 音色 `Sakura` / `Haruto` 在 F0 會回 502
 - 每個「情境」由 `scenarioVoices(pageKey, sceneKey, scenarioIndex)` 決定一組固定男女配對，
@@ -354,9 +354,9 @@ const PAGE_CONFIG = {
   連帶讓 `common.js` 的回首頁按鈕不出現。
   （此檔曾長期缺失導致線上 404，2026-08-06 補回。）
 - **iOS PWA 快取**：情境頁目前引用 `./app.js?v=2`。改動 `app.js` 後手機若沒吃到新版，
-  把 26 頁的版本號一起遞增（`?v=3`）強制刷新。`app.css` 尚未帶版本號，
+  把 27 頁的版本號一起遞增（`?v=3`）強制刷新。`app.css` 尚未帶版本號，
   日後若改動它而手機沒更新，比照辦理
-- **repo 體積**：`audio/` 佔約 116MB（5,042 個檔）。clone 會偏慢屬正常，
+- **repo 體積**：`audio/` 佔約 134MB（5,305 個檔）。clone 會偏慢屬正常，
   且已進 git 歷史刪不掉。新增情境頁時每頁再增加約 5MB
 - **PWA 圖示絕對路徑**：`index.html` 與 `manifest.json` 使用
   `/JP-situations/...` 絕對路徑，這是 GitHub Pages 子路徑託管下 iOS 抓圖示的必要寫法，
