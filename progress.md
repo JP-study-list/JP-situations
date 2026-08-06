@@ -5,6 +5,15 @@
 
 ---
 
+## 2026-08-06（三）
+- 類型：修正
+- 影響檔案：manifest.json（新增）, CLAUDE.md, project-index.md
+- 摘要：補回缺失的 `manifest.json`。`start_url` / `scope` / `icons.src` 全用
+  `/JP-situations/...` 絕對路徑，`display: standalone`，theme_color 對齊
+  `index.html` 的 `<meta name="theme-color">`（`#1f3a5f`）。
+- 原因：`index.html:7` 引用了此檔但它從未進入 repo，線上 404，PWA metadata 失效。
+- 驗證：JSON 可解析；icons 宣告尺寸與實際 PNG 尺寸相符（192x192 / 512x512）。
+
 ## 2026-08-06（二）
 - 類型：新增
 - 影響檔案：electronics-store.html, index.html
@@ -23,7 +32,6 @@
   建立 `project-index.md` 與本檔。
 - 原因：統一為單一規範檔，避免兩份文件並存分歧。
 - 待辦/已知問題：
-  - `manifest.json` 被 `index.html` 引用但不存在於 repo，線上 404，待補。
   - 舊規範「本機不使用 git、不要執行 git 指令」已作廢（repo 已有 git 與 GitHub remote），
     改依 `CLAUDE.md` §4 ABCD 規則。
 

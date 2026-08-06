@@ -103,8 +103,8 @@ index.html  (hub：卡片入口 / 熱力圖 / 統計 / 收藏視窗)
 | 檔案 | 用途 |
 |------|------|
 | `icon-192.png` / `icon-512.png` | PWA 圖示 |
-| `apple-touch-icon.png` | iOS 加到主畫面圖示 |
-| ~~`manifest.json`~~ | **缺失**：`index.html` 有引用但檔案不存在，線上 404（見 `CLAUDE.md` §8.13） |
+| `apple-touch-icon.png` | iOS 加到主畫面圖示（180x180） |
+| `manifest.json` | PWA manifest。`start_url` / `scope` / `icons.src` 一律 `/JP-situations/...` 絕對路徑，僅由 `index.html` 引用 |
 
 ---
 
@@ -123,4 +123,3 @@ index.html  (hub：卡片入口 / 熱力圖 / 統計 / 收藏視窗)
 ## git 備註
 
 - 分支：`main`（GitHub Pages 來源）；本地另有 `backup` 備份分支，勿直接推送
-- `manifest.json` 從未進入 repo，見上方靜態資源說明

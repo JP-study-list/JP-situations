@@ -314,8 +314,11 @@ const PAGE_CONFIG = {
 - 使用方式以 iOS 加到主畫面（PWA / standalone）為主
 
 ### 8.13 已知地雷（本專案特有）
-- **`manifest.json` 缺失**：`index.html` 有 `<link rel="manifest" href="/JP-situations/manifest.json">`，
-  但該檔從未進入 repo，線上會 404。iOS 靠 `apple-touch-icon` 仍可加到主畫面，但 PWA metadata 失效。
+- **`manifest.json` 的路徑**：`start_url` / `scope` / `icons.src` 全部用
+  `/JP-situations/...` 絕對路徑（GitHub Pages 子路徑託管的必要寫法）。
+  `scope` 少了尾斜線或改成相對路徑，PWA 會脫離 standalone 模式，
+  連帶讓 `common.js` 的回首頁按鈕不出現。
+  （此檔曾長期缺失導致線上 404，2026-08-06 補回。）
 - **iOS PWA 快取**：更新 `app.js` / `app.css` 後若手機沒吃到新版，
   在情境頁的引用加版本號強制刷新（`./app.js?v=2`）
 - **PWA 圖示絕對路徑**：`index.html` 與 `manifest.json` 使用

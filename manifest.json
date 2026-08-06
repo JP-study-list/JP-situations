@@ -1,0 +1,26 @@
+{
+  "name": "日文情境學習",
+  "short_name": "日文情境",
+  "description": "日文情境學習工具集：速查表、記憶卡、測驗與常用句對話。",
+  "lang": "zh-TW",
+  "dir": "ltr",
+  "start_url": "/JP-situations/index.html",
+  "scope": "/JP-situations/",
+  "display": "standalone",
+  "background_color": "#f5f5f3",
+  "theme_color": "#1f3a5f",
+  "icons": [
+    {
+      "src": "/JP-situations/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/JP-situations/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
