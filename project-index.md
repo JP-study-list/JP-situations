@@ -48,6 +48,7 @@ index.html  (hub：卡片入口 / 熱力圖 / 統計 / 收藏視窗)
 | `common.js` | 收藏 CRUD、Firestore 拉取／推送與合併、同步碼、主題偏好、standalone 回首頁鈕。掛 `window.JPHub` | **鐵則 1：不得擅自修改**；Firebase config 在此（apiKey 非密鑰） |
 | `tools/gen-audio.mjs` | 語音生成腳本。抽取 27 頁資料 → 呼叫 Azure Neural TTS → 產出 `audio/` | 只在本機跑，不隨頁面載入。**新增情境頁後必須補跑** |
 | `voice-check.html` | 診斷工具頁：列出裝置上的日文語音、品質評分、性別判定，可試聽 | 非情境頁，不掛 `index.html` 入口，可隨時刪除 |
+| `.nojekyll` | 空檔。讓 GitHub Pages 跳過 Jekyll，直接打包靜態檔 | **不可刪**。少了它，Pages 會對 5,305 個音檔逐檔跑 Jekyll，build 撐不過 15 分鐘逾時，線上會靜靜停在舊版本 |
 | `.gitignore` | 保護 `.env`、`node_modules/` 等 | `.env.example` 刻意不忽略 |
 | `.env.example` | Azure 金鑰設定範本 | 實際的 `.env` 絕不進 git（見 `CLAUDE.md` §4 規則 D） |
 | `README.md` | 僅一行專案名 | 目前無實質內容 |
@@ -173,3 +174,5 @@ Azure F0 免費層：每月 50 萬字元、每 60 秒 20 次請求（不可調�
 ## git 備註
 
 - 分支：`main`（GitHub Pages 來源）；本地另有 `backup` 備份分支，勿直接推送
+- **push 成功不等於上線**：要確認 Actions 的 `pages build and deployment` 也成功。
+  build 失敗時線上會停在舊版本，本機與 git 都看不出異狀（2026-08-07 踩過，見 `progress.md`）

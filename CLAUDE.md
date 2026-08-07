@@ -172,6 +172,7 @@
 | `audio/<音色>/` | 預生成語音 mp3，檔名為日文原文的 hash。不手動編輯 |
 | `tools/gen-audio.mjs` | 語音生成腳本，只在本機跑，不隨頁面載入。詳見 §8.11 |
 | `voice-check.html` | 語音診斷頁，非情境頁，不掛 `index.html` 入口 |
+| `.nojekyll` | 空檔。讓 GitHub Pages 跳過 Jekyll，**不可刪**，見 §8.13 |
 
 `hotel.html` 是情境頁的標準範本，任何新增或修改都以它為結構基準。
 詳細檔案清單與職責見 `project-index.md`。
@@ -302,6 +303,8 @@ const PAGE_CONFIG = {
 - [ ] 語音音檔已生成：`node tools/gen-audio.mjs --dry` 顯示「尚未生成 0 個」
 - [ ] 端對端命中：用 `app.js` 自身的 `audioHash` 與 `scenarioVoices` 算出該頁每一句的
       音檔 URL，逐一確認檔案存在，命中率須為 100%（否則該頁會退回 Web Speech）
+- [ ] **push 之後確認線上真的更新**：Actions 的 `pages build and deployment` 為成功，
+      且新頁面與其音檔線上回 200。build 失敗時線上會停在舊版本，本機看不出來
 
 ### 8.9 Firebase
 - Project ID：`jpsituations`
@@ -318,6 +321,10 @@ const PAGE_CONFIG = {
 - 網域：`https://jp-study-list.github.io/JP-situations/`
 - 無 Apps Script。`.env` 存 Azure 語音金鑰（見 §8.11），已列入 `.gitignore`，絕不進 git
 - 本地 `backup` branch 為備份分支，勿直接推送
+- 根目錄的 `.nojekyll` 讓 Pages 跳過 Jekyll，直接打包靜態檔。**此檔不可刪**，
+  詳見 §8.13
+- **push 之後要確認 Actions 的 `pages build and deployment` 真的成功**。
+  push 成功不等於上線；build 失敗時線上會靜靜停在舊版本，本機完全看不出來
 
 ### 8.11 語音系統
 發音走**預生成音檔**，Web Speech 只在音檔缺漏時當備援。
@@ -358,6 +365,11 @@ const PAGE_CONFIG = {
   日後若改動它而手機沒更新，比照辦理
 - **repo 體積**：`audio/` 佔約 134MB（5,305 個檔）。clone 會偏慢屬正常，
   且已進 git 歷史刪不掉。新增情境頁時每頁再增加約 5MB
+- **根目錄的 `.nojekyll` 不可刪**：少了它，GitHub Pages 會對 5,305 個音檔跑完整
+  Jekyll 逐檔處理，build job 撐不過 15 分鐘硬性逾時而被取消，整站停留在舊版本。
+  症狀是新頁面線上 404、全站語音退回 Web Speech，但**本機一切正常**、
+  git 也顯示推送成功，只有 Actions 頁面看得出來
+  （2026-08-06 曾連續兩次部署失敗，2026-08-07 補上此檔後 build 從逾時降為 38 秒）
 - **PWA 圖示絕對路徑**：`index.html` 與 `manifest.json` 使用
   `/JP-situations/...` 絕對路徑，這是 GitHub Pages 子路徑託管下 iOS 抓圖示的必要寫法，
   **不要改成相對路徑**

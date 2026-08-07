@@ -5,6 +5,33 @@
 
 ---
 
+## 2026-08-07（日）
+- 類型：修正
+- 影響檔案：`.nojekyll`（新增）, `CLAUDE.md`, `project-index.md`
+- 摘要：加入根目錄 `.nojekyll`，修復 GitHub Pages 連續兩次建置逾時。
+- 原因：自 `8045c54` 加入 5,042 個預生成音檔後，Pages 的 build job 連續兩次跑滿
+  **15 分鐘硬性逾時**被取消（run #36 / #37），線上因此停留在 `a918bfa` 附近的版本。
+  根因是根目錄缺少 `.nojekyll`，Pages 會對 5,305 個 mp3 跑完整 Jekyll 逐檔處理。
+- **這個失敗最難察覺的地方**：本機完全正常、`git push` 也成功，
+  只有 GitHub Actions 頁面看得出來。實際線上影響是
+  `immigration.html` 404、**整個 `audio/` 目錄從未上線**，
+  等於前一天做的整套 Azure 語音線上一個都沒生效，全站都在跑 Web Speech 備援。
+- 診斷依據：
+  - #33 / #34（`bb32c23`，音檔加入前）build 皆為 40 多秒成功；
+    #36 / #37 皆為 15:01 被 cancel，分水嶺正是加入音檔的那次 commit
+  - 實測線上 `audio/nanami/001336b6763098d8.mp3` 與 `immigration.html` 均為 404，
+    而 `index.html` / `manifest.json` / `school-interview.html` 為 200
+- 驗證（修復後）：
+  - run #38 build **38 秒成功**（對比先前 15 分鐘逾時）
+  - 六個音色目錄各抽一檔、七個核心檔案（三個引擎檔 + 三頁 + manifest）線上全數 200
+  - **端對端**：用 `app.js` 的 `audioHash` 與 `scenarioVoices` 算出 `immigration.html`
+    全部 274 個播放 URL，均勻抽 15 個查線上 —— 全數 200，線上不會退回 Web Speech
+  - `node tools/gen-audio.mjs --dry`：27 頁、5,305 檔、尚未生成 0 個
+- 待辦/已知問題：
+  - `.nojekyll` 是空檔，容易在整理檔案時被誤刪。已在 `CLAUDE.md` §8.10 與 §8.13 標註不可刪。
+  - 已在 §8.8 驗證清單補上「push 後確認線上真的更新」一項，
+    避免日後再次發生「本機驗證全過但線上沒更新」。
+
 ## 2026-08-07（六）
 - 類型：新增
 - 影響檔案：`immigration.html`（新增）, `index.html`, `audio/`（新增 263 個 mp3）,
