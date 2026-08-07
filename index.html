@@ -823,6 +823,10 @@
             <div class="card-title">入境審查</div>
             <div class="card-sub">工作簽證入境的審查、在留卡與海關</div>
           </a>
+          <a class="card" href="./bank-account.html">
+            <div class="card-title">銀行開戶</div>
+            <div class="card-sub">必備文件、貯金種類與資料不齊的應對</div>
+          </a>
           <a class="card" href="./post-office.html">
             <div class="card-title">郵局</div>
             <div class="card-sub">寄件、郵資、包裹寄送用語</div>
@@ -952,6 +956,7 @@ const PAGES = [
   { file: "train-subway.html", title: "電車・地下鐵" },
   { file: "school-interview.html", title: "語言學校面試" },
   { file: "immigration.html", title: "入境審查" },
+  { file: "bank-account.html", title: "銀行開戶" },
 ];
 const titleOf = f => (PAGES.find(p => p.file === f) || {}).title || f;
 
@@ -1581,6 +1586,7 @@ if (localStorage.getItem('hub-sidebar') === '1') {
     /* 日本在住者 */
     'school-interview.html': ['#6E5A4A', 'M2 8l10-4 10 4-10 4zM6.5 10.5V16c0 1.4 2.5 2.5 5.5 2.5s5.5-1.1 5.5-2.5v-5.5M20 9v5'],
     'immigration.html':      ['#3C5468', 'M5 3h11l3 3v15H5zM8 8h8M8 12h8M8 16h5'],
+    'bank-account.html':     ['#316745', 'M3 6c3-1.5 6-1.5 9 0 3-1.5 6-1.5 9 0v12c-3-1.5-6-1.5-9 0-3-1.5-6-1.5-9 0zM12 6v12'],
     'post-office.html':      ['#A8483F', 'M3 6h18v12H3zM3 6.5l9 6.5 9-6.5']
   };
 

@@ -190,7 +190,7 @@
    ```
    載入順序不可調換：資料 → `app.js` → `common.js`。
    `app.js` **與 `app.css` 都帶版本號**，用於強制刷新 iOS PWA 快取。
-   改動任一檔時，27 頁的對應版本號要一起進版（2026-08-07 暖簾改版時 `app.css` 首次進版為 `?v=2`）。
+   改動任一檔時，28 頁的對應版本號要一起進版（2026-08-07 暖簾改版時 `app.css` 首次進版為 `?v=2`）。
 3. **全檔禁止 emoji**（包含資料內容、註解、UI 文字）。
 4. 檔名用英文或 romaji 小寫，可含連字號（如 `car-rental.html`）。
 5. 不使用任何前端框架或建置工具。外部資源只有 Google Fonts 與 Firebase CDN。
@@ -223,7 +223,7 @@ const PAGE_CONFIG = {
 
 **`--r-sm` / `--r-md` / `--r-lg` / `--r-pill` 現已不被 `app.css` 使用**。
 暖簾風格改用近方角，圓角統一由 `app.css` 自己的 `--r-sheet: 2px` 控制。
-這四個變數在 27 頁中保留不刪（無害，且改版若要回退時仍需要），
+這四個變數在 28 頁中保留不刪（無害，且改版若要回退時仍需要），
 新增情境頁時照抄 `hotel.html` 即可，不必特別處理。
 
 **衍生色由 `app.css` 以 `color-mix()` 從 `--primary` 推導**
@@ -350,7 +350,7 @@ const PAGE_CONFIG = {
   輸出 `audio/<音色>/<日文原文的 hash>.mp3`（24kHz / 48kbps 單聲道）
 - 金鑰存於根目錄 `.env` 的 `AZURE_SPEECH_KEY` 與 `AZURE_SPEECH_REGION`（**不進 git**，
   範本見 `.env.example`）。Azure 定價層為 **F0 免費層**：每月 50 萬字元、
-  每 60 秒 20 次請求（不可調整）。全站目前約 9.8 萬字元
+  每 60 秒 20 次請求（不可調整）。全站目前約 10.3 萬字元
 - 音色池 6 個：女聲 `nanami` / `mayu` / `shiori`，男聲 `keita` / `daichi` / `naoki`。
   刻意排除 `aoi`（使用者試聽後不喜歡）；HD 音色 `Sakura` / `Haruto` 在 F0 會回 502
 - 每個「情境」由 `scenarioVoices(pageKey, sceneKey, scenarioIndex)` 決定一組固定男女配對，
@@ -378,11 +378,11 @@ const PAGE_CONFIG = {
   連帶讓 `common.js` 的回首頁按鈕不出現。
   （此檔曾長期缺失導致線上 404，2026-08-06 補回。）
 - **iOS PWA 快取**：情境頁目前引用 `./app.js?v=2`。改動 `app.js` 後手機若沒吃到新版，
-  把 27 頁的版本號一起遞增（`?v=3`）強制刷新。`app.css` 尚未帶版本號，
+  把 28 頁的版本號一起遞增（`?v=3`）強制刷新。`app.css` 尚未帶版本號，
   日後若改動它而手機沒更新，比照辦理
-- **repo 體積**：`audio/` 佔約 134MB（5,305 個檔）。clone 會偏慢屬正常，
+- **repo 體積**：`audio/` 佔約 137MB（5,550 個檔）。clone 會偏慢屬正常，
   且已進 git 歷史刪不掉。新增情境頁時每頁再增加約 5MB
-- **根目錄的 `.nojekyll` 不可刪**：少了它，GitHub Pages 會對 5,305 個音檔跑完整
+- **根目錄的 `.nojekyll` 不可刪**：少了它，GitHub Pages 會對 5,550 個音檔跑完整
   Jekyll 逐檔處理，build job 撐不過 15 分鐘硬性逾時而被取消，整站停留在舊版本。
   症狀是新頁面線上 404、全站語音退回 Web Speech，但**本機一切正常**、
   git 也顯示推送成功，只有 Actions 頁面看得出來
