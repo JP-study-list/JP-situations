@@ -84,7 +84,17 @@
     為誤記，於此更正（不修改該筆歷史紀錄）。
   - 「資格外活動許可」的申請流程（機場當場或入管窗口）對話量約 10 句，
     撐不起獨立一頁，規劃併入日後重做的入境頁。
-  - 尚未 commit／push，待使用者確認。
+- 部署：commit `e2791f4`（250 檔）→ push `main` →
+  Actions run **#43 `pages build and deployment` success**（`.nojekyll` 生效，未重演逾時）。
+  線上實測 33 項全過：
+  - 八個核心檔案（`bank-account.html` / `index.html` / `app.css?v=2` / `app.js?v=2` /
+    `common.js` / `manifest.json` / `immigration.html` / `post-office.html`）皆 200
+  - 新頁 273 個播放點均勻抽 18 個查線上，全數 200 且檔案大小正常
+  - 線上內容確認**非快取舊檔**：`pageKey`、主色 `#316745`、含「資格外活動許可」、
+    210 句全數上線；首頁的卡片、`PAGES`、`SCENE` 三處都已生效
+  - 順帶確認上一筆 `abfeec1` 的 run #42 也是 success（該筆當時未記錄部署結果）
+- **本機沒有 `gh` CLI**，查 Actions 改走公開 REST API
+  （`api.github.com/repos/JP-study-list/JP-situations/actions/runs`，public repo 免認證）。
 
 ## 2026-08-07（二）
 - 類型：新增（分類）
