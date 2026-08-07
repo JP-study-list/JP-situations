@@ -272,7 +272,7 @@ const PAGE_CONFIG = {
 
 ### 8.6 新增情境的完整流程
 1. 以 `hotel.html` 為結構範本建立 `<情境>.html`
-2. **同步更新 `index.html` 的兩個地方**（只改其一會造成功能缺漏）：
+2. **同步更新 `index.html` 的三個地方**（漏任一個都會造成缺漏）：
    - 卡片入口，放進對應分類區塊（飲食／買い物／旅行）：
      ```html
      <a class="card" href="./檔名.html">
@@ -283,6 +283,10 @@ const PAGE_CONFIG = {
    - `const PAGES` 陣列加入 `{ file: "檔名.html", title: "中文名稱" }`
      供隨機學習、最少複習、收藏來源標籤使用。
      **`title` 必須與 `card-title` 完全相同**，否則收藏視窗的來源名稱會顯示錯誤
+   - **檔尾的 `SCENE` 對照表**加入 `'檔名.html': ['#色值', 'SVG path d']`
+     （2026-08-07 暖簾改版新增）。色值取日本傳統色，並避開同區塊相鄰卡片的顏色；
+     圖示是 24x24 viewBox 的單一 path 線稿。
+     **漏掉不會報錯**，該卡片只會退回預設藍鼠、與其他卡片同色，失去場景辨識度
 3. **生成語音音檔**（漏掉這步不會報錯，新頁面只會安靜地退回 Web Speech）：
    ```
    node tools/gen-audio.mjs --dry    先看要生成幾個
@@ -311,7 +315,8 @@ const PAGE_CONFIG = {
 - [ ] script 載入順序為：資料 → `app.js` → `common.js`
 - [ ] 無殘留舊變數名（如 `--navy`）、無 emoji
 - [ ] KANJI_READINGS：以 Python 模擬最長匹配，確認對話中漢字詞零缺漏
-- [ ] 新增情境時，`index.html` 的卡片與 `PAGES` 兩處都已更新且 title 一致
+- [ ] 新增情境時，`index.html` 的卡片、`PAGES`、檔尾 `SCENE` 三處都已更新，
+      且 `PAGES.title` 與 `card-title` 完全一致、`SCENE` 的 key 與 `href` 完全一致
 - [ ] 語音音檔已生成：`node tools/gen-audio.mjs --dry` 顯示「尚未生成 0 個」
 - [ ] 端對端命中：用 `app.js` 自身的 `audioHash` 與 `scenarioVoices` 算出該頁每一句的
       音檔 URL，逐一確認檔案存在，命中率須為 100%（否則該頁會退回 Web Speech）

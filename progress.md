@@ -58,10 +58,17 @@
   另跑 8 項回歸（收藏 API、星號標記與取消、對話渲染）確認 `JPHub` 未受影響。
 - **順帶修正一處文件錯誤**：`project-index.md` 原記載 common.js「index.html 與情境頁都載入」，
   實測 `index.html` **完全沒有引用 common.js**（hub 自帶一份 inline Firebase 同步邏輯）。已更正。
+- 部署：commit `93a276a`（33 檔）→ push `main` → Actions run **#40 `pages build and deployment` success**。
+  線上實測（`https://jp-study-list.github.io/JP-situations`）：
+  - `index.html` / `hotel.html` / `immigration.html` / `common.js` 皆 200
+  - `app.css?v=2` 200 且內容確認為暖簾版（非快取舊檔）
+  - `audio/nanami/001336b6763098d8.mp3` 200 —— 音檔仍在，未重演 2026-08-07（日）的 `.nojekyll` 事故
+  - 以 headless Chrome 直接渲染**線上**首頁與情境頁，與本機一致
 - 待辦/已知問題：
   - `--r-sm` / `--r-md` / `--r-lg` / `--r-pill` 已不被 `app.css` 使用（改用 `--r-sheet: 2px`），
     27 頁中保留不刪。已更新 `CLAUDE.md` §8.4 說明，避免下次照舊規範誤判。
-  - 尚未 push，**上線後必須確認 Actions 的 `pages build and deployment` 成功**。
+  - 新增情境頁時，除了 §8.6 既有步驟，還要在 `index.html` 檔尾的 `SCENE` 補一筆
+    場景色與圖示；漏了不會報錯，該卡片只會退回預設藍鼠、與其他卡片同色。
 
 ## 2026-08-07（日）
 - 類型：修正
