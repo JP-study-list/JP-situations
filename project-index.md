@@ -24,7 +24,7 @@ index.html  (hub：卡片入口 / 熱力圖 / 統計 / 收藏視窗)
    ├─→ hotel.html ─┐
    ├─→ ramen.html ─┤  每頁只含：配色 <style> + 四個資料區塊 + PAGE_CONFIG
    ├─→ ...        ─┤
-   └─→ (共 28 頁) ─┘
+   └─→ (共 29 頁) ─┘
                     │
                     ├─ app.css   全部情境頁樣式（只用 var()，不定義色值）
                     ├─ app.js    共用引擎：注入骨架 HTML + 全部互動邏輯
@@ -34,7 +34,7 @@ index.html  (hub：卡片入口 / 熱力圖 / 統計 / 收藏視窗)
 
 載入順序不可調換：資料區塊 → app.js → common.js
 情境頁引用 app.js 與 app.css 時都帶版本號（`./app.js?v=2`、`./app.css?v=2`），
-避免 iOS PWA 吃到舊快取。改動任一檔，28 頁的對應版本號要一起進版
+避免 iOS PWA 吃到舊快取。改動任一檔，29 頁的對應版本號要一起進版
 ```
 
 ## 視覺風格（2026-08-07 起：暖簾 / Noren）
@@ -43,7 +43,7 @@ index.html  (hub：卡片入口 / 熱力圖 / 統計 / 收藏視窗)
 （紫藍漸層、玻璃擬態、大圓角配柔影、置中英雄區、emoji 圖示、Tailwind 色階）。
 
 - **暖簾色帶**：頂欄／側欄標頭／收藏視窗標頭，底緣以 CSS mask 做出裂口垂片
-- **商店街首頁**：28 張卡片各有專屬日本傳統色與線稿圖示，
+- **商店街首頁**：29 張卡片各有專屬日本傳統色與線稿圖示，
   對照表在 `index.html` 檔尾的 `SCENE`（新增情境頁時要補一筆，未登記者退回預設藍鼠）
 - **對話分鏡**：店員＝實色方角氣泡＋左尖角；客人＝描邊圓角氣泡＋右尖角（形狀不同，不只顏色不同）；
   說話者標牌為**縱書**，保留完整稱呼
@@ -59,12 +59,12 @@ index.html  (hub：卡片入口 / 熱力圖 / 統計 / 收藏視窗)
 | 檔案 | 用途 | 備註 |
 |------|------|------|
 | `index.html` | hub 首頁。暖簾頁首、商店街卡片、側欄（收束列）、收藏 Modal（含收藏測驗）、學習熱力圖、統計、最近瀏覽、最少複習、同步碼設定 | 自成一體，**不吃** `app.css` / `app.js`；改情境頁時常需同步改此檔的卡片、`PAGES` 與檔尾的 `SCENE` 場景色／圖示表 |
-| `app.js` | 共用引擎。骨架注入、速查表（REF）、記憶卡／測驗（STUDY）、易混（CONFUSE）、常用句（PHRASE）、furigana、語音、主題切換 | **鐵則 1：不得擅自修改**，影響全部 28 頁。語音層見下方「語音系統」 |
+| `app.js` | 共用引擎。骨架注入、速查表（REF）、記憶卡／測驗（STUDY）、易混（CONFUSE）、常用句（PHRASE）、furigana、語音、主題切換 | **鐵則 1：不得擅自修改**，影響全部 29 頁。語音層見下方「語音系統」 |
 | `app.css` | 情境頁全部樣式（**暖簾風格**，2026-08-07 改版）。主色取自各頁 `--primary`，衍生色以 `color-mix()` 推導 | **鐵則 1：不得擅自修改**；語意色 `--ok` 鶯／`--ng` 紅梅／`--mark` 山吹（收藏星號）寫死於此。需 iOS 16.4+ |
 | `common.js` | 收藏 CRUD、Firestore 拉取／推送與合併、同步碼、主題偏好、standalone 回首頁鈕（暖簾造型）。掛 `window.JPHub` | **鐵則 1：不得擅自修改**；Firebase config 在此（apiKey 非密鑰）。**只有情境頁載入，`index.html` 不載入**——hub 有自己的 inline Firebase module，兩邊各一份同步邏輯 |
-| `tools/gen-audio.mjs` | 語音生成腳本。抽取 28 頁資料 → 呼叫 Azure Neural TTS → 產出 `audio/` | 只在本機跑，不隨頁面載入。**新增情境頁後必須補跑** |
+| `tools/gen-audio.mjs` | 語音生成腳本。抽取 29 頁資料 → 呼叫 Azure Neural TTS → 產出 `audio/` | 只在本機跑，不隨頁面載入。**新增情境頁後必須補跑** |
 | `voice-check.html` | 診斷工具頁：列出裝置上的日文語音、品質評分、性別判定，可試聽 | 非情境頁，不掛 `index.html` 入口，可隨時刪除 |
-| `.nojekyll` | 空檔。讓 GitHub Pages 跳過 Jekyll，直接打包靜態檔 | **不可刪**。少了它，Pages 會對 5,550 個音檔逐檔跑 Jekyll，build 撐不過 15 分鐘逾時，線上會靜靜停在舊版本 |
+| `.nojekyll` | 空檔。讓 GitHub Pages 跳過 Jekyll，直接打包靜態檔 | **不可刪**。少了它，Pages 會對 5,798 個音檔逐檔跑 Jekyll，build 撐不過 15 分鐘逾時，線上會靜靜停在舊版本 |
 | `.gitignore` | 保護 `.env`、`node_modules/` 等 | `.env.example` 刻意不忽略 |
 | `.env.example` | Azure 金鑰設定範本 | 實際的 `.env` 絕不進 git（見 `CLAUDE.md` §4 規則 D） |
 | `README.md` | 僅一行專案名 | 目前無實質內容 |
@@ -74,10 +74,10 @@ index.html  (hub：卡片入口 / 熱力圖 / 統計 / 收藏視窗)
 
 ---
 
-## 情境頁（28 頁）
+## 情境頁（29 頁）
 
 `hotel.html` 是**結構範本**，新增或修改一律以它為基準。
-每頁 `pageKey` 必須等於檔名主體且全站唯一（已驗證：28 頁無重複、無誤植）。
+每頁 `pageKey` 必須等於檔名主體且全站唯一（已驗證：29 頁無重複、無誤植）。
 
 以下四個分類與**表內順序，皆與 `index.html` 的區塊及卡片排列完全一致**（2026-08-07 對齊）。
 分類只是 `index.html` 的視覺分區，`PAGES` 與檔尾 `SCENE` 都不分類，移動卡片時兩者不需改動。
@@ -118,16 +118,31 @@ index.html  (hub：卡片入口 / 熱力圖 / 統計 / 收藏視窗)
 | `car-rental.html` | 租車 | car-rental |
 | `train-subway.html` | 電車・地下鐵 | train-subway |
 
-### 日本在住者（4）
+### 日本在住者（5）
 > 2026-08-07 新增的第四個分類，收在住日本者會遇到的情境（非觀光客視角）。
-> 前三頁由「旅行」移入，頁面內容一字未改；`bank-account.html` 為本分類原生新增。
+> `school-interview` / `immigration` / `post-office` 由「旅行」移入，頁面內容一字未改；
+> `bank-account` 與 `student-immigration` 為本分類原生新增。
 
 | 檔案 | 標題 | pageKey |
 |------|------|---------|
 | `school-interview.html` | 語言學校面試（**非服務業敬語頁**，見下） | school-interview |
-| `immigration.html` | 入境審查（**非服務業敬語頁**，見下） | immigration |
+| `student-immigration.html` | 留學生入境（**非服務業敬語頁**，見下） | student-immigration |
+| `immigration.html` | 工作簽入境（**非服務業敬語頁**，見下） | immigration |
 | `bank-account.html` | 銀行開戶 | bank-account |
 | `post-office.html` | 郵局 | post-office |
+
+> **兩頁入境是刻意並存的兩條簽證路線，勿合併**：
+> - `student-immigration.html`：在留資格「留学」。軸心是**經費支弁者、學校照會、
+>   資格外活動許可、別送品**，並收了「聽不懂時請求通譯」一個情境。
+> - `immigration.html`：就労ビザ。軸心是勤務先、雇用契約、技術・人文知識・国際業務。
+>
+> 兩頁的 VOCAB **零重疊**（新頁 48 字全部避開舊頁那 48 字），CONFUSE 六組也全部不同。
+> 唯一同主題的是税関的「食品與藥品」，句子全部重寫（新頁角度是從台灣帶來的常備藥與食物）。
+>
+> **`immigration.html` 的檔名與 `pageKey` 絕對不可改**（2026-08-07 只改了顯示標題）：
+> 收藏 key 是 `` `immigration.html::word::…` ``，存在 localStorage 與 Firestore，
+> 改檔名會讓既有收藏全部失聯。要改稱呼只動三處顯示標題
+> （`PAGE_CONFIG.title`、`index.html` 的 `card-title` 與 `PAGES.title`）。
 
 > `bank-account.html` 與 `post-office.html` 內容**刻意分工，勿合併也勿互相補齊**：
 > `post-office.html` 的「郵局金融服務」場景已有一個 13 句的「開設帳戶」情境，
@@ -137,12 +152,15 @@ index.html  (hub：卡片入口 / 熱力圖 / 統計 / 收藏視窗)
 > （口座／口座番号／暗証番号／キャッシュカード／通帳／振込／預金／残高／本人確認書類…），
 > 唯一相近的是「本人確認」對上「本人確認書類」（動作 vs 文件，用法不同，刻意各留一個）。
 
-> `school-interview.html` 與 `immigration.html` 是刻意偏離 §8.5 的兩頁：
+> `school-interview.html`、`immigration.html`、`student-immigration.html`
+> 是刻意偏離 §8.5 的三頁：
 > - 面試不適用服務業敬語，`staff`（老師）改用尊敬語提問、`customer`（學生）改用謙讓語應答。
-> - 入境審查的 `staff` 是公務員不是店家，用「〜をお願いします／〜を教えてください／
+> - 兩頁入境的 `staff` 是公務員不是店家，用「〜をお願いします／〜を教えてください／
 >   確認させていただきます／こちらへどうぞ／ご協力ありがとうございました」。
+>   `immigration.html` 的稱呼是「審查官／旅客」，`student-immigration.html` 是
+>   「職員／留學生」（後者橫跨入国審査、在留カード交付與税関三種窗口，故用泛稱）。
 >
-> 修改這兩頁時**不要**套用 いらっしゃいませ／かしこまりました／くださいませ 等店家用語。
+> 修改這三頁時**不要**套用 いらっしゃいませ／かしこまりました／くださいませ 等店家用語。
 
 > `index.html` 的卡片 `card-title` 與 `PAGES` 的 `title` 必須完全相同，
 > 否則收藏視窗的來源名稱會顯示錯誤。
@@ -163,7 +181,7 @@ audio/
   naoki/    直紀（男）
 ```
 
-- 共 5,550 個檔（24kHz / 48kbps 單聲道 mp3，約 137MB）
+- 共 5,798 個檔（24kHz / 48kbps 單聲道 mp3，約 140MB）
 - 檔名為日文原文的 hash，**同一句話跨情境頁共用同一個檔**
 - 每個「情境」由 `scenarioVoices(pageKey, sceneKey, scenarioIndex)` 決定一組固定男女配對，
   對話內部不換聲音，變化來自跨情境；角色會互換，所以店員不一定是女聲。共 18 種組合
@@ -180,7 +198,7 @@ audio/
    跑之前可先 `--dry` 看要生成幾個，腳本會一併回報已無人引用的孤兒音檔。
 
 Azure F0 免費層：每月 50 萬字元、每 60 秒 20 次請求（不可調整，全量重跑約 4.5 小時）。
-全站目前 103,116 字元，單月額度綽綽有餘。
+全站目前 106,924 字元，單月額度綽綽有餘。
 
 ---
 
