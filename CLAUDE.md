@@ -314,14 +314,27 @@ const PAGE_CONFIG = {
 - [ ] `defaultCat` / `defaultScene` 指向的 key 確實存在於資料中
 - [ ] script 載入順序為：資料 → `app.js` → `common.js`
 - [ ] 無殘留舊變數名（如 `--navy`）、無 emoji
-- [ ] KANJI_READINGS：以 Python 模擬最長匹配，確認對話中漢字詞零缺漏
+- [ ] KANJI_READINGS **兩道檢查**（抄 `app.js` 的最長匹配邏輯跑，Node 或 Python 皆可）：
+      1. **零缺漏**——掃過每一句 `jp`，不得有任何漢字沒被字典吃掉
+      2. **反向重建**——用字典把 `jp` 還原成假名，與 `kana` 欄逐字比對須全等
+      第 2 道會抓到第 1 道抓不到的**讀音誤植**（如「本人様」誤含「ご」、
+      `kana` 打錯字），2026-08-07 兩頁各靠它抓出 44 與 51 句問題
 - [ ] 新增情境時，`index.html` 的卡片、`PAGES`、檔尾 `SCENE` 三處都已更新，
       且 `PAGES.title` 與 `card-title` 完全一致、`SCENE` 的 key 與 `href` 完全一致
-- [ ] 語音音檔已生成：`node tools/gen-audio.mjs --dry` 顯示「尚未生成 0 個」
+- [ ] 語音音檔已生成：生成腳本回報「**失敗 0**」（失敗時重跑，見 §8.13），
+      且 `node tools/gen-audio.mjs --dry` 顯示「尚未生成 0 個」
 - [ ] 端對端命中：用 `app.js` 自身的 `audioHash` 與 `scenarioVoices` 算出該頁每一句的
-      音檔 URL，逐一確認檔案存在，命中率須為 100%（否則該頁會退回 Web Speech）
-- [ ] **push 之後確認線上真的更新**：Actions 的 `pages build and deployment` 為成功，
+      音檔 URL，逐一確認檔案存在，命中率須為 100%（否則該頁會退回 Web Speech）。
+      **改動既有頁時，該頁也要重跑這項當回歸**
+- [ ] **headless 渲染實跑**：走 CDP（`--remote-debugging-port` + Node 內建 `WebSocket`），
+      **不要用 `--dump-dom`（會永不返回）**，並加 `--disable-background-networking`。
+      淺色驗證前先 `localStorage.setItem('hub-dark','0')` 再重新載入（見 §8.13）。
+      至少驗：三個主分頁、四個單字分類與張數、四個場景與情境、對話句數、
+      furigana 標記、說話者標牌、無橫向溢出、無未捕捉例外、深色對比度
+- [ ] **push 之後確認線上真的更新**：Actions 的 `pages build and deployment` 為成功
+      （**用 `head_sha` 比對本次 commit**，見 §8.13），
       且新頁面與其音檔線上回 200。build 失敗時線上會停在舊版本，本機看不出來
+- [ ] 線上內容確認**非快取舊檔**：抓線上 HTML 驗 `pageKey`、主色、句數與關鍵詞
 
 ### 8.9 Firebase
 - Project ID：`jpsituations`
@@ -393,6 +406,24 @@ const PAGE_CONFIG = {
 - **主題偏好**：情境頁與 hub 共用 localStorage 的 `hub-dark` 鍵
   （`'1'`=深色、`'0'`=淺色），未設定過才依系統偏好
 - **圖片／檔名格式**：寫死檔名前先確認實際副檔名
+- **情境頁的檔名與 `pageKey` 一旦上線就不可改**：收藏 key 是
+  `` `${檔名}::${type}::${id}` ``，存在 localStorage 與 Firestore。
+  改檔名或 `pageKey` 會讓該頁既有收藏全部失聯，且無法回復。
+  要改頁面稱呼只動**三處顯示標題**：`PAGE_CONFIG.title`、
+  `index.html` 的 `card-title` 與 `PAGES.title`
+  （2026-08-07「入境審查」改稱「工作簽入境」即照此辦理，該頁 diff 僅一行）
+- **`gen-audio.mjs` 失敗不中止**：個別音檔失敗（Azure 偶發回 `terminated`）只會計入
+  「失敗 N」並繼續跑完，**腳本仍以 exit 0 結束**。看到失敗數非 0 要**重跑一次**
+  （已完成的自動跳過，只補失敗的），直到 `--dry` 顯示「尚未生成 0 個」。
+  漏補的話該詞會靜靜退回 Web Speech，本機與線上都不會報錯
+- **push 後查 Actions 要用 `head_sha` 比對本次 commit**：push 完立刻查，
+  最新一筆 run 往往還是**上一顆 commit** 的（新 run 尚未排進佇列）。
+  只看「最新一筆是否 completed」會誤判成已部署完成。
+  本機無 `gh` CLI，改走公開 REST API：
+  `https://api.github.com/repos/JP-study-list/JP-situations/actions/runs`（public repo 免認證）
+- **headless Chrome 預設 `prefers-color-scheme: dark`**：驗證情境頁時若不先寫
+  `localStorage.setItem('hub-dark','0')` 再重新載入，拿到的「淺色截圖」其實是深色版，
+  淺色配色等於完全沒驗到。另見 §8.8 的渲染驗證方式
 
 ### 8.14 工作環境與輸出慣例
 - 本專案**已納入 git 版本控制**且有 GitHub remote。
