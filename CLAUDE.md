@@ -166,7 +166,7 @@
 |------|------|
 | `index.html` | hub 首頁：卡片入口、熱力圖、統計、收藏視窗、Firebase 同步 |
 | `common.js` | 共用模組：收藏資料層、雲端同步、回首頁按鈕。以 ES module 載入 |
-| `app.css` | 全部情境頁樣式。顏色一律 `var(--xxx)`，**不定義任何色值** |
+| `app.css` | 全部情境頁樣式（暖簾風格）。主色系一律 `var(--xxx)` 取自各頁，衍生色以 `color-mix()` 推導；僅語意色 `--ok` / `--ng` / `--mark` 三個日本傳統色寫死於此 |
 | `app.js` | 共用引擎：注入頁面骨架 HTML ＋ 全部互動邏輯，讀取各頁的 `PAGE_CONFIG` |
 | `<情境>.html` | 各情境頁。**只含三樣東西**：配色區塊、四個資料區塊、`PAGE_CONFIG` |
 | `audio/<音色>/` | 預生成語音 mp3，檔名為日文原文的 hash。不手動編輯 |
@@ -182,14 +182,15 @@
    若需求必須動它們，先明確告知使用者會影響所有情境頁，取得同意後才動工。
 2. 情境頁結構必須與 `hotel.html` 完全一致，不多不少：
    ```
-   head：meta、title、Google Fonts、<link rel="stylesheet" href="./app.css">、<style> 配色 </style>
+   head：meta、title、Google Fonts、<link rel="stylesheet" href="./app.css?v=2">、<style> 配色 </style>
    body：
      <script>  四個資料區塊 ＋ PAGE_CONFIG  </script>
      <script src="./app.js?v=2"></script>
      <script type="module" src="./common.js"></script>
    ```
    載入順序不可調換：資料 → `app.js` → `common.js`。
-   `app.js` 的版本號用於強制刷新 iOS PWA 快取，改動 `app.js` 時 27 頁要一起進版。
+   `app.js` **與 `app.css` 都帶版本號**，用於強制刷新 iOS PWA 快取。
+   改動任一檔時，27 頁的對應版本號要一起進版（2026-08-07 暖簾改版時 `app.css` 首次進版為 `?v=2`）。
 3. **全檔禁止 emoji**（包含資料內容、註解、UI 文字）。
 4. 檔名用英文或 romaji 小寫，可含連字號（如 `car-rental.html`）。
 5. 不使用任何前端框架或建置工具。外部資源只有 Google Fonts 與 Firebase CDN。
@@ -210,27 +211,38 @@ const PAGE_CONFIG = {
 - `speakerLabels` 目前所有情境都是兩種說話者。若未來出現三種以上，
   需修改 `app.js` 的說話者篩選邏輯，屬於鐵則 1 的範圍。
 
-### 8.4 配色規格
+### 8.4 配色規格（2026-08-07 暖簾改版後）
 情境頁的 `<style>` 只做兩件事：定義 `:root` 與 `html[data-theme="dark"]`。
 
-**app.css / app.js 需要的 14 個變數，缺一不可**（少了會造成透明區塊或方角）：
+**app.css / app.js 實際需要的 10 個顏色變數，缺一不可**：
 ```
 --primary  --bg  --card  --card-alt  --line  --ink  --ink-soft  --muted
---accent-soft  --on-accent  --r-sm  --r-md  --r-lg  --r-pill
+--accent-soft  --on-accent
 ```
 另建議一併定義 `--primary-deep`、`--secondary`、`--accent` 以維持與範本一致。
 
-圓角固定值：`--r-sm:10px`、`--r-md:16px`、`--r-lg:22px`、`--r-pill:999px`。
+**`--r-sm` / `--r-md` / `--r-lg` / `--r-pill` 現已不被 `app.css` 使用**。
+暖簾風格改用近方角，圓角統一由 `app.css` 自己的 `--r-sheet: 2px` 控制。
+這四個變數在 27 頁中保留不刪（無害，且改版若要回退時仍需要），
+新增情境頁時照抄 `hotel.html` 即可，不必特別處理。
+
+**衍生色由 `app.css` 以 `color-mix()` 從 `--primary` 推導**
+（`--tint`、`--edge-strong`、深色暖簾的底與字等），
+所以新增情境頁**不需要**、也不應該自己定義這些衍生變數。
+`color-mix()` 需要 iOS 16.4+ / Safari 16.2+ / Chrome 111+。
 
 **深色主題基底固定不變**：
 ```
 --bg:#1C1B1A  --card:#262423  --card-alt:#302E2C  --line:#3F3D3A
 --ink:#D9D5D0  --ink-soft:#A8A39C  --muted:#7A766F
 ```
-主色為高彩度時（例如朱紅），深色模式須提供提亮版 `--primary`，
+深色的暖簾走「深底＋亮字＋亮細邊」的夜間招牌，由 `app.css` 自動推導，
+情境頁不需處理。主色為高彩度時（例如朱紅）仍建議提供提亮版 `--primary`，
 並覆寫 `--accent-soft`（改為暗色調）與 `--on-accent`（改為淺色）。
 
-星號啟用色 `#C8A32C` 已寫死在 `app.css`，不隨主色改變，情境頁不需處理。
+語意色寫死在 `app.css` 的 `:root`，不隨主色改變，情境頁不需處理：
+`--ok` 鶯 `#66753A`、`--ng` 紅梅 `#A9515C`、`--mark` 山吹 `#BF8E2E`（收藏星號）。
+深色模式各自提亮。
 
 ### 8.5 資料內容規格
 四個資料區塊依序放在情境頁的第一個 `<script>` 內。

@@ -152,15 +152,43 @@ function mountHomeButton() {
     (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
   if (!standalone) return;
 
+  // 暖簾風格：方角實色小招牌，底緣有裂口，與 app.css 同一套視覺語彙。
+  // 改用注入 style 而非 inline cssText，才能寫 ::after（裂口）與深色覆寫。
+  const style = document.createElement("style");
+  style.textContent = `
+    .home-noren {
+      position: fixed; bottom: 20px; left: 16px; z-index: 9999;
+      width: 44px; height: 46px;
+      display: flex; align-items: center; justify-content: center;
+      padding-bottom: 8px;
+      background: var(--primary, #1F3A5F);
+      color: var(--on-accent, #F4F5F7);
+      text-decoration: none; border-radius: 2px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.18);
+      transition: transform .14s ease;
+    }
+    .home-noren::after {
+      content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 8px;
+      background: var(--bg, #F4F5F7);
+      -webkit-mask: repeating-linear-gradient(to right, #000 0 9px, transparent 9px 12px);
+              mask: repeating-linear-gradient(to right, #000 0 9px, transparent 9px 12px);
+    }
+    .home-noren:active { transform: scale(.93); }
+    html[data-theme="dark"] .home-noren {
+      background: color-mix(in srgb, var(--primary) 30%, var(--card));
+      color: color-mix(in srgb, var(--primary) 40%, #F2EDE3);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .home-noren { transition-duration: .001ms; }
+    }
+  `;
+  document.head.appendChild(style);
+
   const btn = document.createElement("a");
   btn.href = "./index.html";
+  btn.className = "home-noren";
   btn.setAttribute("aria-label", "回首頁");
-  btn.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5"/><path d="M5 10v10h14V10"/></svg>';
-  btn.style.cssText =
-    "position:fixed;bottom:18px;left:18px;z-index:9999;" +
-    "width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;" +
-    "background:rgba(28,28,26,.85);color:#d4a94e;text-decoration:none;" +
-    "box-shadow:0 2px 10px rgba(0,0,0,.25);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);";
+  btn.innerHTML = '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5"/><path d="M5 10v10h14V10"/></svg>';
   document.body.appendChild(btn);
 }
 

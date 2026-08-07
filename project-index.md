@@ -30,11 +30,27 @@ index.html  (hub：卡片入口 / 熱力圖 / 統計 / 收藏視窗)
                     ├─ app.js    共用引擎：注入骨架 HTML + 全部互動邏輯
                     │              └─→ audio/<音色>/<hash>.mp3   預生成語音
                     └─ common.js ES module：收藏資料層 / Firebase 同步 / 回首頁鈕
-                                  （index.html 與情境頁都載入）
+                                  （**只有情境頁載入**；index.html 自帶一份 inline 同步邏輯）
 
 載入順序不可調換：資料區塊 → app.js → common.js
-情境頁引用 app.js 時帶版本號（`./app.js?v=2`），避免 iOS PWA 吃到舊快取
+情境頁引用 app.js 與 app.css 時都帶版本號（`./app.js?v=2`、`./app.css?v=2`），
+避免 iOS PWA 吃到舊快取。改動任一檔，27 頁的對應版本號要一起進版
 ```
+
+## 視覺風格（2026-08-07 起：暖簾 / Noren）
+
+取材自日本實體設計語彙，刻意迴避 AI 生成 UI 的典型特徵
+（紫藍漸層、玻璃擬態、大圓角配柔影、置中英雄區、emoji 圖示、Tailwind 色階）。
+
+- **暖簾色帶**：頂欄／側欄標頭／收藏視窗標頭，底緣以 CSS mask 做出裂口垂片
+- **商店街首頁**：27 張卡片各有專屬日本傳統色與線稿圖示，
+  對照表在 `index.html` 檔尾的 `SCENE`（新增情境頁時要補一筆，未登記者退回預設藍鼠）
+- **對話分鏡**：店員＝實色方角氣泡＋左尖角；客人＝描邊圓角氣泡＋右尖角（形狀不同，不只顏色不同）；
+  說話者標牌為**縱書**，保留完整稱呼
+- **字體**：標題與日文用明朝（`Noto Serif JP`），中文內文用黑體（`Noto Sans TC`）
+- **動態**：進場 stagger、按壓 scale、答對脈衝／答錯 shake、星號 pop、測驗進度條。
+  只用 transform / opacity，並包 `prefers-reduced-motion`
+- **深色**：暖簾不調暗，改為「深底＋亮字＋亮細邊」的夜間招牌，由 `color-mix()` 自動推導
 
 ---
 
@@ -42,10 +58,10 @@ index.html  (hub：卡片入口 / 熱力圖 / 統計 / 收藏視窗)
 
 | 檔案 | 用途 | 備註 |
 |------|------|------|
-| `index.html` | hub 首頁。側欄、收藏 Modal（含收藏測驗）、學習熱力圖、統計、最近瀏覽、最少複習、同步碼設定 | 自成一體，**不吃** `app.css` / `app.js`；改情境頁時常需同步改此檔的卡片與 `PAGES` |
+| `index.html` | hub 首頁。暖簾頁首、商店街卡片、側欄（收束列）、收藏 Modal（含收藏測驗）、學習熱力圖、統計、最近瀏覽、最少複習、同步碼設定 | 自成一體，**不吃** `app.css` / `app.js`；改情境頁時常需同步改此檔的卡片、`PAGES` 與檔尾的 `SCENE` 場景色／圖示表 |
 | `app.js` | 共用引擎。骨架注入、速查表（REF）、記憶卡／測驗（STUDY）、易混（CONFUSE）、常用句（PHRASE）、furigana、語音、主題切換 | **鐵則 1：不得擅自修改**，影響全部 27 頁。語音層見下方「語音系統」 |
-| `app.css` | 情境頁全部樣式。顏色一律 `var(--xxx)` | **鐵則 1：不得擅自修改**；星號啟用色 `#C8A32C` 寫死於此 |
-| `common.js` | 收藏 CRUD、Firestore 拉取／推送與合併、同步碼、主題偏好、standalone 回首頁鈕。掛 `window.JPHub` | **鐵則 1：不得擅自修改**；Firebase config 在此（apiKey 非密鑰） |
+| `app.css` | 情境頁全部樣式（**暖簾風格**，2026-08-07 改版）。主色取自各頁 `--primary`，衍生色以 `color-mix()` 推導 | **鐵則 1：不得擅自修改**；語意色 `--ok` 鶯／`--ng` 紅梅／`--mark` 山吹（收藏星號）寫死於此。需 iOS 16.4+ |
+| `common.js` | 收藏 CRUD、Firestore 拉取／推送與合併、同步碼、主題偏好、standalone 回首頁鈕（暖簾造型）。掛 `window.JPHub` | **鐵則 1：不得擅自修改**；Firebase config 在此（apiKey 非密鑰）。**只有情境頁載入，`index.html` 不載入**——hub 有自己的 inline Firebase module，兩邊各一份同步邏輯 |
 | `tools/gen-audio.mjs` | 語音生成腳本。抽取 27 頁資料 → 呼叫 Azure Neural TTS → 產出 `audio/` | 只在本機跑，不隨頁面載入。**新增情境頁後必須補跑** |
 | `voice-check.html` | 診斷工具頁：列出裝置上的日文語音、品質評分、性別判定，可試聽 | 非情境頁，不掛 `index.html` 入口，可隨時刪除 |
 | `.nojekyll` | 空檔。讓 GitHub Pages 跳過 Jekyll，直接打包靜態檔 | **不可刪**。少了它，Pages 會對 5,305 個音檔逐檔跑 Jekyll，build 撐不過 15 分鐘逾時，線上會靜靜停在舊版本 |
