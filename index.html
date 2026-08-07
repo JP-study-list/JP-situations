@@ -805,14 +805,16 @@
             <div class="card-title">租車</div>
             <div class="card-sub">租車手續、保險、還車確認</div>
           </a>
-          <a class="card" href="./post-office.html">
-            <div class="card-title">郵局</div>
-            <div class="card-sub">寄件、郵資、包裹寄送用語</div>
-          </a>
           <a class="card" href="./train-subway.html">
             <div class="card-title">電車・地下鐵</div>
             <div class="card-sub">購票、轉乘、誤點與遺失物詢問</div>
           </a>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">日本在住者</div>
+        <div class="grid">
           <a class="card" href="./school-interview.html">
             <div class="card-title">語言學校面試</div>
             <div class="card-sub">動機、學習計畫、經費與打工問答</div>
@@ -820,6 +822,10 @@
           <a class="card" href="./immigration.html">
             <div class="card-title">入境審查</div>
             <div class="card-sub">工作簽證入境的審查、在留卡與海關</div>
+          </a>
+          <a class="card" href="./post-office.html">
+            <div class="card-title">郵局</div>
+            <div class="card-sub">寄件、郵資、包裹寄送用語</div>
           </a>
         </div>
       </div>
@@ -1562,7 +1568,7 @@ if (localStorage.getItem('hub-sidebar') === '1') {
     'greengrocer.html':      ['#6E8A3C', 'M12 21c0-7 3.5-12 9-13 0 8-4.5 13-9 13zM12 21c0-4.5-2.5-8-7-9'],
     'clothing.html':         ['#8A6A80', 'M8 4L4 7l2 3 2-1v11h8V9l2 1 2-3-4-3zM9 4a3 3 0 0 0 6 0'],
     'electronics-store.html':['#4A5B7A', 'M3 5h18v12H3zM9 21h6M12 17v4'],
-    /* 旅行・生活 */
+    /* 旅行 */
     'hotel.html':            ['#35536B', 'M3 19v-7h18v7M3 12V7M21 12V7M7 12V9h4v3'],
     'reservation.html':      ['#7A6A4E', 'M5 4h4l2 5-2.5 1.8a12.5 12.5 0 0 0 4.7 4.7L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z'],
     'shrine.html':           ['#A34438', 'M3 6h18M4.5 9.5h15M7 9.5V21M17 9.5V21'],
@@ -1571,10 +1577,11 @@ if (localStorage.getItem('hub-sidebar') === '1') {
     'directions.html':       ['#6B7A4A', 'M12 3v18M12 5h7l2.5 2.5L19 10h-7M12 12H5l-2.5 2.5L5 17h7'],
     'taxi.html':             ['#B5822C', 'M4 17v-4l2-5h12l2 5v4M3 17h18M7 17v2.5M17 17v2.5M9 4h6'],
     'car-rental.html':       ['#4A6B5A', 'M15.5 3a5.5 5.5 0 1 0-4.6 8.4L4 18.3V21h3l1-1.5h2.2l1-1.5h1.8v-2.2l1.4-1.4A5.5 5.5 0 0 0 15.5 3z'],
-    'post-office.html':      ['#A8483F', 'M3 6h18v12H3zM3 6.5l9 6.5 9-6.5'],
     'train-subway.html':     ['#3E5F7A', 'M6 3h12v12H6zM6.5 15L4 20M17.5 15L20 20M9 7h6M9 11h.5M14.5 11h.5M4 20h16'],
+    /* 日本在住者 */
     'school-interview.html': ['#6E5A4A', 'M2 8l10-4 10 4-10 4zM6.5 10.5V16c0 1.4 2.5 2.5 5.5 2.5s5.5-1.1 5.5-2.5v-5.5M20 9v5'],
-    'immigration.html':      ['#3C5468', 'M5 3h11l3 3v15H5zM8 8h8M8 12h8M8 16h5']
+    'immigration.html':      ['#3C5468', 'M5 3h11l3 3v15H5zM8 8h8M8 12h8M8 16h5'],
+    'post-office.html':      ['#A8483F', 'M3 6h18v12H3zM3 6.5l9 6.5 9-6.5']
   };
 
   document.querySelectorAll('.grid .card').forEach(function (card) {

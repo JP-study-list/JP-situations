@@ -79,7 +79,10 @@ index.html  (hub：卡片入口 / 熱力圖 / 統計 / 收藏視窗)
 `hotel.html` 是**結構範本**，新增或修改一律以它為基準。
 每頁 `pageKey` 必須等於檔名主體且全站唯一（已驗證：27 頁無重複、無誤植）。
 
-### 飲食
+以下四個分類與**表內順序，皆與 `index.html` 的區塊及卡片排列完全一致**（2026-08-07 對齊）。
+分類只是 `index.html` 的視覺分區，`PAGES` 與檔尾 `SCENE` 都不分類，移動卡片時兩者不需改動。
+
+### 飲食（6）
 | 檔案 | 標題 | pageKey |
 |------|------|---------|
 | `izakaya.html` | 居酒屋 | izakaya |
@@ -88,21 +91,21 @@ index.html  (hub：卡片入口 / 熱力圖 / 統計 / 收藏視窗)
 | `gyudon.html` | 牛丼 | gyudon |
 | `sushi.html` | 高級壽司店 | sushi |
 | `yakiniku.html` | 燒肉店 | yakiniku |
-| `starbucks.html` | 星巴克 | starbucks |
-| `bakery.html` | 麵包店 | bakery |
 
-### 買い物
+### 買い物（9）
 | 檔案 | 標題 | pageKey |
 |------|------|---------|
 | `butcher.html` | 肉舖 | butcher |
-| `greengrocer.html` | 蔬菜店 | greengrocer |
-| `konbini.html` | 日本超商 | konbini |
 | `pharmacy.html` | 藥局 | pharmacy |
-| `clothing.html` | 服飾／試穿 | clothing |
+| `konbini.html` | 日本超商 | konbini |
+| `bakery.html` | 麵包店 | bakery |
+| `starbucks.html` | 星巴克 | starbucks |
 | `pokemon-card.html` | 寶可夢卡店 | pokemon-card |
+| `greengrocer.html` | 蔬菜店 | greengrocer |
+| `clothing.html` | 服飾／試穿 | clothing |
 | `electronics-store.html` | 家電量販店 | electronics-store |
 
-### 旅行・生活
+### 旅行（9）
 | 檔案 | 標題 | pageKey |
 |------|------|---------|
 | `hotel.html` | 商務飯店（**範本**） | hotel |
@@ -114,9 +117,16 @@ index.html  (hub：卡片入口 / 熱力圖 / 統計 / 收藏視窗)
 | `taxi.html` | 計程車 | taxi |
 | `car-rental.html` | 租車 | car-rental |
 | `train-subway.html` | 電車・地下鐵 | train-subway |
-| `post-office.html` | 郵局 | post-office |
+
+### 日本在住者（3）
+> 2026-08-07 新增的第四個分類，收在住日本者會遇到的情境（非觀光客視角）。
+> 三頁皆由「旅行」移入，頁面內容一字未改。
+
+| 檔案 | 標題 | pageKey |
+|------|------|---------|
 | `school-interview.html` | 語言學校面試（**非服務業敬語頁**，見下） | school-interview |
 | `immigration.html` | 入境審查（**非服務業敬語頁**，見下） | immigration |
+| `post-office.html` | 郵局 | post-office |
 
 > `school-interview.html` 與 `immigration.html` 是刻意偏離 §8.5 的兩頁：
 > - 面試不適用服務業敬語，`staff`（老師）改用尊敬語提問、`customer`（學生）改用謙讓語應答。
